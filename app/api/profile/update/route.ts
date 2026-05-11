@@ -4,16 +4,24 @@ import { getCurrentUser } from '@/lib/auth/session';
 import { z } from 'zod';
 
 const profileSchema = z.object({
-  name: z.string().optional(),
-  gender: z.enum(['MALE', 'FEMALE', 'OTHER']),
-  birthDate: z.string(),
-  heightCm: z.coerce.number().min(100).max(250),
-  weightStart: z.coerce.number().min(30).max(300),
-  weightGoal: z.coerce.number().min(30).max(300),
-  activityLevel: z.number().min(1).max(5),
+  name: z.string().min(1, 'Имя обязательно'),
+  gender: z.union([
+    z.enum(['MALE', 'FEMALE', 'OTHER']),
+    z.enum(['male', 'female', 'other'])
+  ]),
+  birthDate: z.string().min(1, 'Дата рождения обязательна'),
+  heightCm: z.coerce.number().min(100, 'Рост должен быть не менее 100 см').max(250, 'Рост должен быть не более 250 см'),
+  weightStart: z.coerce.number().min(30, 'Вес должен быть не менее 30 кг').max(300, 'Вес должен быть не более 300 кг'),
+  weightGoal: z.coerce.number().min(30, 'Целевой вес должен быть не менее 30 кг').max(300, 'Целевой вес должен быть не более 300 кг'),
+  activityLevel: z.union([
+    z.coerce.number().min(1).max(5),
+    z.enum(['sedentary', 'light', 'moderate', 'active', 'very_active'])
+  ]),
   weeklyTrainings: z.number().min(0).max(7).optional(),
   goalType: z.enum(['LOSE_WEIGHT', 'GAIN_WEIGHT', 'MAINTAIN_WEIGHT']).optional(),
   professionId: z.string().optional(),
+  avatar: z.string().optional(),
+  onboardingCompleted: z.boolean().optional(),
 });
 
 // Формула Миффлина-Сан Жеора для расчета базового метаболизма
@@ -68,6 +76,24 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const data = profileSchema.parse(body);
 
+    // Нормализуем gender к верхнему регистру
+    const normalizedGender = (typeof data.gender === 'string' ? data.gender.toUpperCase() : data.gender) as 'MALE' | 'FEMALE' | 'OTHER';
+
+    // Нормализуем activityLevel к числу
+    let activityLevelNum: number;
+    if (typeof data.activityLevel === 'string') {
+      const activityMap: Record<string, number> = {
+        'sedentary': 1,
+        'light': 2,
+        'moderate': 3,
+        'active': 4,
+        'very_active': 5,
+      };
+      activityLevelNum = activityMap[data.activityLevel] || 3;
+    } else {
+      activityLevelNum = data.activityLevel;
+    }
+
     // Вычисляем возраст
     const birthDate = new Date(data.birthDate);
     const today = new Date();
@@ -78,11 +104,11 @@ export async function POST(request: NextRequest) {
       data.weightStart,
       data.heightCm,
       age,
-      data.gender
+      normalizedGender
     );
 
     // Применяем коэффициент активности
-    let dailyKcalTarget = bmr * activityMultipliers[data.activityLevel];
+    let dailyKcalTarget = bmr * activityMultipliers[activityLevelNum];
 
     // Применяем коэффициент профессии
     if (data.professionId && professionMultipliers[data.professionId]) {
@@ -108,15 +134,16 @@ export async function POST(request: NextRequest) {
     const user = await prisma.users.update({
       where: { id: currentUser.userId },
       data: {
-        name: data.name || null,
-        gender: data.gender,
+        name: data.name,
+        avatar: data.avatar || null,
+        gender: normalizedGender,
         birth_date: birthDate,
         height_cm: data.heightCm,
         weight_start: data.weightStart,
         weight_goal: data.weightGoal,
-        activity_level: data.activityLevel,
+        activity_level: activityLevelNum,
         daily_kcal_target: dailyKcalTarget,
-        onboarding_completed: true,
+        onboarding_completed: data.onboardingCompleted ?? true,
       },
     });
 

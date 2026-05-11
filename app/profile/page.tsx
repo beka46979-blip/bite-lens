@@ -2,6 +2,8 @@ import { redirect } from 'next/navigation';
 import { getCurrentUser } from '@/lib/auth/session';
 import { prisma } from '@/lib/prisma';
 import { ProfileForm } from './ProfileForm';
+import { ProfileHeader } from './ProfileHeader';
+import { OnboardingWizard } from './OnboardingWizard';
 import { getLocaleFromCookie } from '@/app/i18n/cookies';
 import Link from 'next/link';
 import { LogOut } from 'lucide-react';
@@ -59,29 +61,12 @@ export default async function ProfilePage() {
       <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg border-b border-emerald-100 dark:border-gray-700 shadow-sm">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-5">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            {/* User Info */}
-            <div className="flex items-center gap-4">
-              <div className="relative">
-                {userData.avatar ? (
-                  <img 
-                    src={userData.avatar} 
-                    alt={userData.name || 'User'} 
-                    className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl ring-4 ring-emerald-100 dark:ring-emerald-900/30 object-cover"
-                  />
-                ) : (
-                  <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white font-bold text-2xl ring-4 ring-emerald-100 dark:ring-emerald-900/30">
-                    {userData.name?.[0]?.toUpperCase() || 'U'}
-                  </div>
-                )}
-                <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-emerald-500 rounded-full border-3 border-white dark:border-gray-800"></div>
-              </div>
-              <div>
-                <h2 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 dark:from-emerald-400 dark:to-teal-400 bg-clip-text text-transparent">
-                  {userData.name || 'Пользователь'}
-                </h2>
-                <p className="text-sm text-gray-600 dark:text-gray-400">{userData.email}</p>
-              </div>
-            </div>
+            {/* User Info with Avatar Upload */}
+            <ProfileHeader 
+              initialAvatar={userData.avatar}
+              userName={userData.name || ''}
+              userEmail={userData.email}
+            />
             
             {/* Action Buttons */}
             <div className="flex flex-wrap gap-2 sm:gap-3 w-full sm:w-auto">
@@ -126,7 +111,11 @@ export default async function ProfilePage() {
 
           {/* Form Section */}
           <div className="p-6 sm:p-8 lg:p-10">
-            <ProfileForm user={userData} locale={locale} />
+            {userData.onboardingCompleted ? (
+              <ProfileForm user={userData} locale={locale} />
+            ) : (
+              <OnboardingWizard user={userData} />
+            )}
           </div>
         </div>
       </div>

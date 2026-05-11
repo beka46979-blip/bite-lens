@@ -7,7 +7,18 @@ import { z } from 'zod';
 
 const registerSchema = z.object({
   email: z.string().email(),
-  password: z.string().min(8),
+  password: z.string().min(8).refine(
+    (password) => {
+      const hasUpperCase = /[A-Z]/.test(password);
+      const hasLowerCase = /[a-z]/.test(password);
+      const hasNumber = /[0-9]/.test(password);
+      const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+      return hasUpperCase && hasLowerCase && hasNumber && hasSpecialChar;
+    },
+    {
+      message: 'Пароль должен содержать заглавные и строчные буквы, цифры и специальные символы',
+    }
+  ),
 });
 
 export async function POST(request: NextRequest) {

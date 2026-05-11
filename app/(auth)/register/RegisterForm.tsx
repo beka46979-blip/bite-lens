@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Locale } from '@/app/i18n';
 import { useAuthTranslation } from '@/app/i18n/useTranslation';
-import { Mail, Lock, Loader2 } from 'lucide-react';
+import { Mail, Lock, Loader2, Check, X } from 'lucide-react';
 
 interface RegisterFormProps {
   locale: Locale;
@@ -21,13 +21,42 @@ export function RegisterForm({ locale }: RegisterFormProps) {
     confirmPassword: '',
   });
 
+  // Проверка требований к паролю
+  const passwordRequirements = {
+    length: formData.password.length >= 8,
+    uppercase: /[A-Z]/.test(formData.password),
+    lowercase: /[a-z]/.test(formData.password),
+    number: /[0-9]/.test(formData.password),
+    special: /[!@#$%^&*(),.?":{}|<>]/.test(formData.password),
+  };
+
+  const allRequirementsMet = Object.values(passwordRequirements).every(Boolean);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
-    // Валидация
+    // Валидация длины пароля
     if (formData.password.length < 8) {
       setError(t.register.errors.passwordTooShort);
+      return;
+    }
+
+    // Валидация сложности пароля
+    const hasUpperCase = /[A-Z]/.test(formData.password);
+    const hasLowerCase = /[a-z]/.test(formData.password);
+    const hasNumber = /[0-9]/.test(formData.password);
+    const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(formData.password);
+
+    if (!hasUpperCase || !hasLowerCase || !hasNumber || !hasSpecialChar) {
+      setError('Пароль должен содержать: заглавные и строчные буквы, цифры и специальные символы (!@#$%^&* и т.д.)');
+      return;
+    }
+
+    // Проверка на простые пароли
+    const commonPasswords = ['12345678', 'password', 'qwerty123', 'abc12345', '11111111'];
+    if (commonPasswords.includes(formData.password.toLowerCase())) {
+      setError('Этот пароль слишком простой. Пожалуйста, используйте более сложный пароль');
       return;
     }
 
@@ -107,6 +136,62 @@ export function RegisterForm({ locale }: RegisterFormProps) {
             placeholder={t.register.passwordPlaceholder}
           />
         </div>
+        
+        {/* Password Requirements */}
+        {formData.password && (
+          <div className="mt-3 space-y-2 text-sm">
+            <div className="flex items-center gap-2">
+              {passwordRequirements.length ? (
+                <Check className="w-4 h-4 text-green-500" />
+              ) : (
+                <X className="w-4 h-4 text-red-500" />
+              )}
+              <span className={passwordRequirements.length ? 'text-green-600 dark:text-green-400' : 'text-gray-600 dark:text-gray-400'}>
+                Минимум 8 символов
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              {passwordRequirements.uppercase ? (
+                <Check className="w-4 h-4 text-green-500" />
+              ) : (
+                <X className="w-4 h-4 text-red-500" />
+              )}
+              <span className={passwordRequirements.uppercase ? 'text-green-600 dark:text-green-400' : 'text-gray-600 dark:text-gray-400'}>
+                Заглавная буква (A-Z)
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              {passwordRequirements.lowercase ? (
+                <Check className="w-4 h-4 text-green-500" />
+              ) : (
+                <X className="w-4 h-4 text-red-500" />
+              )}
+              <span className={passwordRequirements.lowercase ? 'text-green-600 dark:text-green-400' : 'text-gray-600 dark:text-gray-400'}>
+                Строчная буква (a-z)
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              {passwordRequirements.number ? (
+                <Check className="w-4 h-4 text-green-500" />
+              ) : (
+                <X className="w-4 h-4 text-red-500" />
+              )}
+              <span className={passwordRequirements.number ? 'text-green-600 dark:text-green-400' : 'text-gray-600 dark:text-gray-400'}>
+                Цифра (0-9)
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              {passwordRequirements.special ? (
+                <Check className="w-4 h-4 text-green-500" />
+              ) : (
+                <X className="w-4 h-4 text-red-500" />
+              )}
+              <span className={passwordRequirements.special ? 'text-green-600 dark:text-green-400' : 'text-gray-600 dark:text-gray-400'}>
+                Специальный символ (!@#$%^&*)
+              </span>
+            </div>
+          </div>
+        )}
       </div>
 
       <div>
