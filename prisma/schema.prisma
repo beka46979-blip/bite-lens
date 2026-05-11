@@ -1,0 +1,379 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model achievements {
+  id                String              @id @db.Uuid
+  slug              String              @unique @db.VarChar(100)
+  title             String              @db.VarChar(255)
+  description       String
+  user_achievements user_achievements[]
+}
+
+model admins {
+  id            String   @id @db.Uuid
+  email         String   @unique @db.VarChar(255)
+  password_hash String   @db.VarChar(255)
+  role          Role     @default(ADMIN)
+  created_at    DateTime @default(now()) @db.Timestamp(6)
+}
+
+model ai_logs {
+  id               String      @id @db.Uuid
+  user_id          String      @db.Uuid
+  snap_id          String?     @db.Uuid
+  model_name       String      @db.VarChar(100)
+  request_payload  Json
+  response_payload Json
+  tokens_used      Int?
+  status           AILogStatus
+  created_at       DateTime    @default(now()) @db.Timestamp(6)
+  users            users       @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@index([created_at])
+}
+
+model daily_nutrition_summary {
+  id             String   @id @db.Uuid
+  user_id        String   @db.Uuid
+  date           DateTime @db.Date
+  total_calories Int
+  total_proteins Decimal  @db.Decimal(7, 2)
+  total_fats     Decimal  @db.Decimal(7, 2)
+  total_carbs    Decimal  @db.Decimal(7, 2)
+  snaps_count    Int
+  kcal_target    Int
+  kcal_diff      Int
+  created_at     DateTime @default(now()) @db.Timestamp(6)
+  users          users    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, date])
+  @@index([user_id])
+  @@index([date])
+}
+
+model food_snap_feedback {
+  id                 String     @id @db.Uuid
+  snap_id            String     @db.Uuid
+  user_id            String     @db.Uuid
+  is_correct         Boolean
+  corrected_calories Int?
+  comment            String?
+  created_at         DateTime   @default(now()) @db.Timestamp(6)
+  food_snaps         food_snaps @relation(fields: [snap_id], references: [id], onDelete: Cascade)
+  users              users      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@index([snap_id])
+}
+
+model food_snaps {
+  id                 String               @id @db.Uuid
+  user_id            String               @db.Uuid
+  meal_id            String?              @db.Uuid
+  image_url          String
+  dish_name          String?              @db.VarChar(255)
+  calories           Int?
+  proteins           Decimal?             @db.Decimal(6, 2)
+  fats               Decimal?             @db.Decimal(6, 2)
+  carbs              Decimal?             @db.Decimal(6, 2)
+  weight_gram        Int?
+  nutrient_score     Int?
+  ai_verdict         String?
+  confidence_score   Decimal?             @db.Decimal(4, 3)
+  created_at         DateTime             @default(now()) @db.Timestamp(6)
+  food_snap_feedback food_snap_feedback[]
+  meals              meals?               @relation(fields: [meal_id], references: [id])
+  users              users                @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@index([created_at])
+  @@index([meal_id])
+}
+
+model foods {
+  id                String   @id @db.Uuid
+  name              String   @db.VarChar(255)
+  calories_per_100g Int
+  proteins          Decimal  @db.Decimal(6, 2)
+  fats              Decimal  @db.Decimal(6, 2)
+  carbs             Decimal  @db.Decimal(6, 2)
+  portion_grams     Int?     // Стандартная порция в граммах (опционально)
+  created_at        DateTime @default(now()) @db.Timestamp(6)
+}
+
+model meals {
+  id         String       @id @db.Uuid
+  user_id    String       @db.Uuid
+  meal_type  MealType
+  created_at DateTime     @default(now()) @db.Timestamp(6)
+  food_snaps food_snaps[]
+  users      users        @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@index([created_at])
+}
+
+model notifications {
+  id         String           @id @db.Uuid
+  user_id    String           @db.Uuid
+  type       NotificationType
+  title      String           @db.VarChar(255)
+  body       String
+  is_read    Boolean          @default(false)
+  created_at DateTime         @default(now()) @db.Timestamp(6)
+  users      users            @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@index([created_at])
+  @@index([is_read])
+}
+
+model profession_translates {
+  id            String      @id @db.Uuid
+  profession_id String      @db.Uuid
+  language_code String      @db.VarChar(10)
+  translate     String
+  created_at    DateTime    @default(now()) @db.Timestamp(6)
+  professions   professions @relation(fields: [profession_id], references: [id], onDelete: Cascade)
+}
+
+model professions {
+  id                    String                  @id @db.Uuid
+  slug                  String                  @unique @db.VarChar(100)
+  created_at            DateTime                @default(now()) @db.Timestamp(6)
+  profession_translates profession_translates[]
+  users                 users[]
+}
+
+model sessions {
+  id            String   @id @db.Uuid
+  user_id       String   @db.Uuid
+  refresh_token String
+  user_agent    String?
+  ip_address    String?  @db.VarChar(45)
+  expires_at    DateTime @db.Timestamp(6)
+  created_at    DateTime @default(now()) @db.Timestamp(6)
+  users         users    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@index([expires_at])
+}
+
+model settings {
+  id    String @id @db.Uuid
+  key   String @unique @db.VarChar(100)
+  value String
+}
+
+model streaks {
+  user_id        String   @id @db.Uuid
+  current_streak Int      @default(0)
+  max_streak     Int      @default(0)
+  last_log_date  DateTime @db.Date
+  users          users    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+}
+
+model subscription_plans {
+  id                      String   @id @db.Uuid
+  plan_type               String   @unique @db.VarChar(50)
+  name_ru                 String   @db.VarChar(100)
+  name_en                 String   @db.VarChar(100)
+  name_kg                 String   @db.VarChar(100)
+  description_ru          String
+  description_en          String
+  description_kg          String
+  price_monthly           Decimal  @db.Decimal(10, 2)
+  price_yearly            Decimal  @db.Decimal(10, 2)
+  currency                Currency @default(USD)
+  daily_ai_analysis_limit Int?
+  has_gamification        Boolean  @default(false)
+  has_advanced_analytics  Boolean  @default(false)
+  has_meal_planning       Boolean  @default(false)
+  has_priority_support    Boolean  @default(false)
+  is_active               Boolean  @default(true)
+  sort_order              Int      @default(0)
+  created_at              DateTime @default(now()) @db.Timestamp(6)
+  updated_at              DateTime @db.Timestamp(6)
+}
+
+model subscriptions {
+  id                String             @id @db.Uuid
+  user_id           String             @db.Uuid
+  status            SubscriptionStatus
+  plan_type         String             @db.VarChar(50)
+  finik_customer_id String?            @db.VarChar(255)
+  trial_ends_at     DateTime?          @db.Timestamp(6)
+  pro_ends_at       DateTime?          @db.Timestamp(6)
+  auto_renew        Boolean            @default(true)
+  created_at        DateTime           @default(now()) @db.Timestamp(6)
+  users             users              @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@index([status])
+}
+
+model user_achievements {
+  user_id        String       @db.Uuid
+  achievement_id String       @db.Uuid
+  unlocked_at    DateTime     @default(now()) @db.Timestamp(6)
+  achievements   achievements @relation(fields: [achievement_id], references: [id], onDelete: Cascade)
+  users          users        @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@id([user_id, achievement_id])
+}
+
+model user_activity_logs {
+  id         String   @id @db.Uuid
+  user_id    String   @db.Uuid
+  action     String   @db.VarChar(100)
+  metadata   Json?
+  created_at DateTime @default(now()) @db.Timestamp(6)
+  users      users    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@index([created_at])
+}
+
+model user_goals {
+  id            String   @id @db.Uuid
+  user_id       String   @db.Uuid
+  goal_type     GoalType
+  target_weight Decimal  @db.Decimal(5, 2)
+  target_date   DateTime @db.Date
+  weekly_rate   Decimal  @db.Decimal(4, 2)
+  created_at    DateTime @default(now()) @db.Timestamp(6)
+  users         users    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+}
+
+model users {
+  id                      String                    @id @db.Uuid
+  email                   String                    @unique @db.VarChar(255)
+  password_hash           String?                   @db.VarChar(255)
+  gender                  Gender?
+  birth_date              DateTime?                 @db.Date
+  height_cm               Decimal?                  @db.Decimal(5, 2)
+  weight_start            Decimal?                  @db.Decimal(5, 2)
+  weight_goal             Decimal?                  @db.Decimal(5, 2)
+  activity_level          Int?                      @db.SmallInt
+  profession_id           String?                   @db.Uuid
+  daily_kcal_target       Int?
+  timezone                String                    @default("UTC") @db.VarChar(50)
+  is_email_verified       Boolean                   @default(false)
+  onboarding_completed    Boolean                   @default(false)
+  last_login_at           DateTime?                 @db.Timestamp(6)
+  created_at              DateTime                  @default(now()) @db.Timestamp(6)
+  updated_at              DateTime                  @default(now()) @updatedAt @db.Timestamp(6)
+  name                    String?                   @db.VarChar(255)
+  google_id               String?                   @unique @db.VarChar(255)
+  avatar                  String?
+  email_verification_code String?                   @db.VarChar(255)
+  password_reset_token    String?                   @db.VarChar(255)
+  two_factor_enabled      Boolean                   @default(false)
+  two_factor_secret       String?                   @db.VarChar(255)
+  role                    Role                      @default(USER)
+  ai_logs                 ai_logs[]
+  daily_nutrition_summary daily_nutrition_summary[]
+  food_snap_feedback      food_snap_feedback[]
+  food_snaps              food_snaps[]
+  meals                   meals[]
+  notifications           notifications[]
+  sessions                sessions[]
+  streaks                 streaks?
+  subscriptions           subscriptions[]
+  user_achievements       user_achievements[]
+  user_activity_logs      user_activity_logs[]
+  user_goals              user_goals[]
+  professions             professions?              @relation(fields: [profession_id], references: [id])
+  weight_logs             weight_logs[]
+
+  @@index([email])
+  @@index([created_at])
+  @@index([role])
+}
+
+model weight_logs {
+  id                    String          @id @db.Uuid
+  user_id               String          @db.Uuid
+  weight                Decimal         @db.Decimal(5, 2)
+  body_fat_percent      Decimal?        @db.Decimal(4, 2)
+  muscle_mass           Decimal?        @db.Decimal(5, 2)
+  source                WeightLogSource
+  log_date              DateTime        @db.Date
+  predicted_target_date DateTime?       @db.Date
+  created_at            DateTime        @default(now()) @db.Timestamp(6)
+  users                 users           @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@index([log_date])
+}
+
+enum AILogStatus {
+  SUCCESS
+  FAILED
+  PENDING
+}
+
+enum Currency {
+  USD
+  EUR
+  RUB
+  KGS
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum GoalType {
+  LOSE_WEIGHT
+  GAIN_WEIGHT
+  MAINTAIN_WEIGHT
+}
+
+enum MealType {
+  BREAKFAST
+  LUNCH
+  DINNER
+  SNACK
+}
+
+enum NotificationType {
+  REMINDER
+  ACHIEVEMENT
+  SYSTEM
+  PROMOTION
+}
+
+enum PlanType {
+  FREE
+  PRO
+  PREMIUM
+}
+
+enum Role {
+  ADMIN
+  USER
+}
+
+enum SubscriptionStatus {
+  TRIAL
+  ACTIVE
+  EXPIRED
+  CANCELLED
+}
+
+enum WeightLogSource {
+  MANUAL
+  SMART_SCALE
+  APP_SYNC
+}

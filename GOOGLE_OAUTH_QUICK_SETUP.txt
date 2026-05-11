@@ -1,0 +1,89 @@
+═══════════════════════════════════════════════════════════════
+  БЫСТРАЯ НАСТРОЙКА GOOGLE OAUTH - ПОШАГОВАЯ ИНСТРУКЦИЯ
+═══════════════════════════════════════════════════════════════
+
+ШАГ 1: Откройте Google Cloud Console
+───────────────────────────────────────────────────────────────
+URL: https://console.cloud.google.com/apis/credentials
+
+ШАГ 2: Создайте новый OAuth Client ID
+───────────────────────────────────────────────────────────────
+1. Нажмите кнопку "+ CREATE CREDENTIALS" (вверху)
+2. Выберите "OAuth client ID"
+
+ШАГ 3: Настройте Consent Screen (если попросит)
+───────────────────────────────────────────────────────────────
+1. Нажмите "CONFIGURE CONSENT SCREEN"
+2. Выберите "External"
+3. Заполните:
+   - App name: Bite Lens
+   - User support email: ваш email
+   - Developer contact: ваш email
+4. Нажмите "SAVE AND CONTINUE" 3 раза
+5. На странице "Test users" добавьте: beka46979@gmail.com
+6. Нажмите "SAVE AND CONTINUE"
+
+ШАГ 4: Создайте OAuth Client ID
+───────────────────────────────────────────────────────────────
+1. Вернитесь в Credentials
+2. Нажмите "+ CREATE CREDENTIALS" → "OAuth client ID"
+3. Application type: "Web application"
+4. Name: "Bite Lens Local Dev"
+
+5. Authorized JavaScript origins:
+   Нажмите "+ ADD URI" и добавьте:
+   
+   http://localhost:3000
+
+6. Authorized redirect URIs:
+   Нажмите "+ ADD URI" и добавьте:
+   
+   http://localhost:3000/api/auth/google/callback
+
+7. Нажмите "CREATE"
+
+ШАГ 5: Скопируйте credentials
+───────────────────────────────────────────────────────────────
+Появится окно с:
+- Client ID (начинается с цифр, заканчивается на .apps.googleusercontent.com)
+- Client secret (начинается с GOCSPX-)
+
+Скопируйте их!
+
+ШАГ 6: Обновите .env файл
+───────────────────────────────────────────────────────────────
+Откройте файл .env в проекте и замените:
+
+GOOGLE_CLIENT_ID="ваш-новый-client-id"
+GOOGLE_CLIENT_SECRET="ваш-новый-client-secret"
+
+ШАГ 7: Перезапустите сервер
+───────────────────────────────────────────────────────────────
+В терминале нажмите Ctrl+C, затем:
+npm run dev
+
+ШАГ 8: Проверьте
+───────────────────────────────────────────────────────────────
+1. Откройте: http://localhost:3000/register
+2. Нажмите "Google аркылуу катталуу"
+3. Выберите аккаунт beka46979@gmail.com
+4. Разрешите доступ
+5. Вы должны попасть на страницу профиля!
+
+═══════════════════════════════════════════════════════════════
+  ЕСЛИ ВСЕ ЕЩЕ НЕ РАБОТАЕТ
+═══════════════════════════════════════════════════════════════
+
+Проверьте в .env:
+✓ NEXT_PUBLIC_APP_URL="http://localhost:3000"
+✓ GOOGLE_CLIENT_ID начинается с цифр
+✓ GOOGLE_CLIENT_SECRET начинается с GOCSPX-
+✓ Нет лишних пробелов или кавычек
+
+Проверьте в Google Console:
+✓ Redirect URI точно: http://localhost:3000/api/auth/google/callback
+✓ Без слеша в конце
+✓ Точно http:// (не https)
+✓ Точно порт 3000
+
+═══════════════════════════════════════════════════════════════
