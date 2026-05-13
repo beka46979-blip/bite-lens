@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Locale } from '@/app/i18n';
-import { User, Calendar, Activity, Target, Loader2, UserCircle2, Users, Ruler, Weight, Dumbbell, TrendingDown, TrendingUp, Minus, Briefcase, Armchair, PersonStanding, Footprints, Flame, Trash2 } from 'lucide-react';
+import { User, Calendar, Activity, Target, Loader2, UserCircle2, Users, Ruler, Weight, Dumbbell, TrendingDown, TrendingUp, Minus, Briefcase, Armchair, PersonStanding, Footprints, Flame } from 'lucide-react';
 import { Modal } from '@/app/components/Modal';
 
 interface ProfileFormProps {
@@ -32,8 +32,6 @@ export function ProfileForm({ user, locale }: ProfileFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [showModal, setShowModal] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
   const [modalConfig, setModalConfig] = useState({
     title: '',
     message: '',
@@ -56,33 +54,6 @@ export function ProfileForm({ user, locale }: ProfileFormProps) {
   const showErrorModal = (title: string, message: string) => {
     setModalConfig({ title, message, type: 'warning' });
     setShowModal(true);
-  };
-
-  const handleDeleteAvatar = async () => {
-    setIsDeleting(true);
-
-    try {
-      const response = await fetch('/api/profile/avatar', {
-        method: 'DELETE',
-      });
-
-      if (response.ok) {
-        router.refresh();
-        setShowDeleteConfirm(false);
-        setModalConfig({
-          title: 'Фото удалено',
-          message: 'Фото профиля успешно удалено.',
-          type: 'info',
-        });
-        setShowModal(true);
-      } else {
-        showErrorModal('Ошибка', 'Не удалось удалить фото');
-      }
-    } catch (error) {
-      showErrorModal('Ошибка', 'Произошла ошибка при удалении фото');
-    } finally {
-      setIsDeleting(false);
-    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -172,11 +143,9 @@ export function ProfileForm({ user, locale }: ProfileFormProps) {
       });
       setShowModal(true);
       
-      // Если профиль был завершён впервые, перенаправляем на дашборд
+      // Перенаправляем на dashboard после сохранения
       setTimeout(() => {
-        if (!user.onboardingCompleted) {
-          router.push('/dashboard');
-        }
+        router.push('/dashboard');
       }, 1500);
     } catch (err) {
       setError('Ошибка сервера');
@@ -532,55 +501,6 @@ export function ProfileForm({ user, locale }: ProfileFormProps) {
           </p>
         </div>
       </div>
-
-      {/* Delete Avatar Button */}
-      {user.avatar && (
-        <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
-          <button
-            type="button"
-            onClick={() => setShowDeleteConfirm(true)}
-            className="w-full flex items-center justify-center gap-2 px-4 py-3 border-2 border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 transition-all font-semibold"
-          >
-            <Trash2 className="w-5 h-5" />
-            Удалить фото профиля
-          </button>
-        </div>
-      )}
-
-      {/* Delete Confirmation Modal */}
-      <Modal
-        isOpen={showDeleteConfirm}
-        onClose={() => setShowDeleteConfirm(false)}
-        type="warning"
-        message="Вы уверены, что хотите удалить фото профиля? Это действие нельзя отменить."
-      >
-        <div className="flex gap-3 mt-4">
-          <button
-            onClick={() => setShowDeleteConfirm(false)}
-            disabled={isDeleting}
-            className="flex-1 px-4 py-2 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-all font-semibold"
-          >
-            Отмена
-          </button>
-          <button
-            onClick={handleDeleteAvatar}
-            disabled={isDeleting}
-            className="flex-1 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-xl transition-all font-semibold disabled:opacity-50 flex items-center justify-center gap-2"
-          >
-            {isDeleting ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Удаление...
-              </>
-            ) : (
-              <>
-                <Trash2 className="w-4 h-4" />
-                Удалить
-              </>
-            )}
-          </button>
-        </div>
-      </Modal>
 
       {/* Submit Button */}
       <div className="pt-4">

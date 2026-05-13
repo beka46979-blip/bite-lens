@@ -84,35 +84,6 @@ export default async function DashboardPage() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-10">
-        {/* Кнопка сканирования еды */}
-        <div className="mb-8 sm:mb-10">
-          <Link
-            href="/scan-food"
-            className="group block w-full bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 hover:from-emerald-600 hover:via-teal-600 hover:to-cyan-600 text-white rounded-2xl sm:rounded-3xl p-5 sm:p-7 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-[1.02] relative overflow-hidden"
-          >
-            {/* Animated background effect */}
-            <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
-            
-            <div className="relative flex items-center justify-between gap-4">
-              <div className="flex items-center gap-4 sm:gap-5 min-w-0 flex-1">
-                <div className="w-14 h-14 sm:w-16 sm:h-16 bg-white/25 backdrop-blur-sm rounded-2xl flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform duration-300">
-                  <svg className="w-7 h-7 sm:w-9 sm:h-9" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                </div>
-                <div className="min-w-0 flex-1">
-                  <h3 className="text-lg sm:text-xl lg:text-2xl font-bold mb-1 sm:mb-1.5">Добавить прием пищи</h3>
-                  <p className="text-white/90 text-sm sm:text-base truncate">Сфотографируйте еду для анализа калорий</p>
-                </div>
-              </div>
-              <svg className="w-6 h-6 sm:w-7 sm:h-7 flex-shrink-0 group-hover:translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
-              </svg>
-            </div>
-          </Link>
-        </div>
-
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
           {/* Текущий вес */}
           <div className="group bg-white dark:bg-gray-800 rounded-2xl shadow-lg hover:shadow-xl p-5 sm:p-6 transition-all duration-300 hover:scale-105 border border-blue-100 dark:border-blue-900/30">
@@ -224,6 +195,7 @@ export default async function DashboardPage() {
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
             <Link
               href="/scan-food"
+              prefetch={true}
               className="group px-6 sm:px-8 py-3 sm:py-3.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all text-sm sm:text-base flex items-center justify-center gap-2 hover:scale-105"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -233,6 +205,7 @@ export default async function DashboardPage() {
             </Link>
             <Link
               href="/meal-history"
+              prefetch={true}
               className="px-6 sm:px-8 py-3 sm:py-3.5 border-2 border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 rounded-xl font-semibold hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-all text-sm sm:text-base hover:scale-105 hover:border-emerald-300 dark:hover:border-emerald-700 flex items-center justify-center gap-2"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

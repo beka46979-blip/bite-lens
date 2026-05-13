@@ -3,28 +3,27 @@ import { prisma } from '@/lib/prisma';
 import { hashPassword } from '@/lib/auth/password';
 import { signJWT } from '@/lib/auth/jwt';
 import { setAuthCookies } from '@/lib/auth/cookies';
+import { validateStrongPassword } from '@/lib/auth/password-validation';
 import { z } from 'zod';
 
 const registerSchema = z.object({
   email: z.string().email(),
-  password: z.string().min(8).refine(
-    (password) => {
-      const hasUpperCase = /[A-Z]/.test(password);
-      const hasLowerCase = /[a-z]/.test(password);
-      const hasNumber = /[0-9]/.test(password);
-      const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
-      return hasUpperCase && hasLowerCase && hasNumber && hasSpecialChar;
-    },
-    {
-      message: 'Пароль должен содержать заглавные и строчные буквы, цифры и специальные символы',
-    }
-  ),
+  password: z.string().min(8),
 });
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { email, password } = registerSchema.parse(body);
+
+    // Валидация сложного пароля
+    const passwordValidation = validateStrongPassword(password);
+    if (!passwordValidation.valid) {
+      return NextResponse.json(
+        { error: passwordValidation.error },
+        { status: 400 }
+      );
+    }
 
     // Проверка существования пользователя
     const existingUser = await prisma.users.findUnique({

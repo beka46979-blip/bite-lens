@@ -57,9 +57,9 @@ export default async function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800">
-      {/* Header Bar */}
-      <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg border-b border-emerald-100 dark:border-gray-700 shadow-sm">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-5">
+      {/* Header Bar - Fixed */}
+      <div className="fixed top-0 left-0 right-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg border-b border-emerald-100 dark:border-gray-700 shadow-sm z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-5">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             {/* User Info with Avatar Upload */}
             <ProfileHeader 
@@ -73,7 +73,7 @@ export default async function ProfilePage() {
               {userData.onboardingCompleted && (
                 <Link
                   href="/dashboard"
-                  className="flex-1 sm:flex-none text-center px-5 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-xl hover:shadow-lg transition-all hover:scale-105 font-semibold text-sm"
+                  className="flex-1 sm:flex-none flex items-center justify-center text-center px-5 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-xl hover:shadow-lg transition-all hover:scale-105 font-semibold text-sm"
                 >
                   Dashboard
                 </Link>
@@ -90,9 +90,12 @@ export default async function ProfilePage() {
         </div>
       </div>
 
+      {/* Spacer for fixed header */}
+      <div className="h-20 sm:h-24"></div>
+
       {/* Main Content */}
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-10">
-        <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl overflow-hidden">
+      <div className="max-w-7xl mx-auto">
+        <div className="bg-white dark:bg-gray-800 shadow-2xl overflow-hidden">
           {/* Header Section */}
           <div className="bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 px-6 sm:px-8 py-8 sm:py-10 relative overflow-hidden">
             <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>

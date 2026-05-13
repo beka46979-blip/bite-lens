@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, AlertCircle } from 'lucide-react';
 
 interface ModalProps {
@@ -15,13 +16,28 @@ interface ModalProps {
 export function Modal({ isOpen, onClose, title, message, type = 'warning', children }: ModalProps) {
   useEffect(() => {
     if (isOpen) {
+      // Блокируем скролл и сохраняем текущую позицию
+      const scrollY = window.scrollY;
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.width = '100%';
       document.body.style.overflow = 'hidden';
     } else {
-      document.body.style.overflow = 'unset';
+      // Восстанавливаем скролл
+      const scrollY = document.body.style.top;
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.width = '';
+      document.body.style.overflow = '';
+      window.scrollTo(0, parseInt(scrollY || '0') * -1);
     }
 
     return () => {
-      document.body.style.overflow = 'unset';
+      // Очистка при размонтировании
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.width = '';
+      document.body.style.overflow = '';
     };
   }, [isOpen]);
 
@@ -50,41 +66,48 @@ export function Modal({ isOpen, onClose, title, message, type = 'warning', child
 
   const colorScheme = colors[type];
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+  const modalContent = (
+    <div 
+      className="fixed top-0 left-0 right-0 bottom-0 z-[99999] flex items-center justify-center animate-in fade-in duration-200"
+      style={{ position: 'fixed', inset: 0 }}
+    >
       {/* Backdrop */}
       <div 
         className="absolute inset-0 bg-black/50 backdrop-blur-sm"
         onClick={onClose}
+        style={{ position: 'absolute', inset: 0 }}
       />
 
       {/* Modal */}
-      <div className="relative bg-white dark:bg-gray-800 rounded-3xl shadow-2xl max-w-md w-full animate-in zoom-in-95 duration-200">
+      <div 
+        className="relative bg-white dark:bg-gray-800 rounded-3xl shadow-2xl max-w-lg w-full animate-in zoom-in-95 duration-200"
+        style={{ position: 'relative', maxHeight: '90vh', overflowY: 'auto' }}
+      >
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-colors"
+          className="absolute top-5 right-5 p-2.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-colors"
         >
-          <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+          <X className="w-6 h-6 text-gray-500 dark:text-gray-400" />
         </button>
 
         {/* Content */}
-        <div className="p-6 sm:p-8">
+        <div className="p-8 sm:p-10">
           {/* Icon */}
-          <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 ${colorScheme.icon}`}>
-            <AlertCircle className="w-8 h-8" />
+          <div className={`w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-5 ${colorScheme.icon}`}>
+            <AlertCircle className="w-10 h-10" />
           </div>
 
           {/* Title */}
           {title && (
-            <h3 className="text-2xl font-bold text-center text-gray-900 dark:text-white mb-3">
+            <h3 className="text-2xl sm:text-3xl font-bold text-center text-gray-900 dark:text-white mb-4">
               {title}
             </h3>
           )}
 
           {/* Message */}
           {message && (
-            <p className="text-center text-gray-600 dark:text-gray-400 mb-6 leading-relaxed">
+            <p className="text-base sm:text-lg text-center text-gray-600 dark:text-gray-400 mb-8 leading-relaxed">
               {message}
             </p>
           )}
@@ -93,7 +116,7 @@ export function Modal({ isOpen, onClose, title, message, type = 'warning', child
           {children || (
             <button
               onClick={onClose}
-              className={`w-full py-3.5 bg-gradient-to-r ${colorScheme.button} text-white rounded-xl font-semibold shadow-lg transition-all hover:scale-105`}
+              className={`w-full py-4 bg-gradient-to-r ${colorScheme.button} text-white rounded-xl font-semibold text-lg shadow-lg transition-all hover:scale-105`}
             >
               Понятно
             </button>
@@ -102,4 +125,7 @@ export function Modal({ isOpen, onClose, title, message, type = 'warning', child
       </div>
     </div>
   );
+
+  // Рендерим модальное окно в body через Portal
+  return typeof document !== 'undefined' ? createPortal(modalContent, document.body) : null;
 }

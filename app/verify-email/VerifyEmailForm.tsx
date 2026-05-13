@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useRef, KeyboardEvent } from 'react';
+import { useState, useRef, KeyboardEvent, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Loader2, Mail, CheckCircle } from 'lucide-react';
+import { Loader2, CheckCircle } from 'lucide-react';
 
 interface VerifyEmailFormProps {
   email: string;
@@ -11,48 +11,44 @@ interface VerifyEmailFormProps {
 export function VerifyEmailForm({ email }: VerifyEmailFormProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
-  const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [code, setCode] = useState(['', '', '', '', '', '']);
-  const [codeSent, setCodeSent] = useState(false);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  const handleSendCode = async () => {
-    setIsSending(true);
-    setError('');
-    setSuccess('');
+  // Автоматически отправляем код при загрузке страницы
+  useEffect(() => {
+    const sendCode = async () => {
+      try {
+        const response = await fetch('/api/auth/verify-email/send-code', {
+          method: 'POST',
+        });
 
-    try {
-      const response = await fetch('/api/auth/verify-email/send-code', {
-        method: 'POST',
-      });
+        const data = await response.json();
 
-      const data = await response.json();
+        if (!response.ok) {
+          setError(data.error === 'Email already verified' 
+            ? 'Email уже подтвержден'
+            : 'Ошибка при отправке кода');
+          return;
+        }
 
-      if (!response.ok) {
-        setError(data.error === 'Email already verified' 
-          ? 'Email уже подтвержден'
-          : 'Ошибка при отправке кода');
-        return;
+        if (data.code) {
+          // Если SMTP не настроен, показываем код
+          setSuccess(`Email не настроен. Код для демо: ${data.code}`);
+        } else {
+          setSuccess('Код отправлен на ваш email');
+        }
+
+        // Фокус на первое поле
+        setTimeout(() => inputRefs.current[0]?.focus(), 100);
+      } catch (err) {
+        setError('Ошибка сервера');
       }
+    };
 
-      setCodeSent(true);
-      if (data.code) {
-        // Если SMTP не настроен, показываем код
-        setSuccess(`Email не настроен. Код для демо: ${data.code}`);
-      } else {
-        setSuccess('Код отправлен на ваш email');
-      }
-
-      // Фокус на первое поле
-      setTimeout(() => inputRefs.current[0]?.focus(), 100);
-    } catch (err) {
-      setError('Ошибка сервера');
-    } finally {
-      setIsSending(false);
-    }
-  };
+    sendCode();
+  }, []);
 
   const handleCodeChange = (index: number, value: string) => {
     // Разрешаем только цифры
@@ -147,6 +143,34 @@ export function VerifyEmailForm({ email }: VerifyEmailFormProps) {
     handleVerify(verificationCode);
   };
 
+  const handleResendCode = async () => {
+    setError('');
+    setSuccess('Отправка кода...');
+
+    try {
+      const response = await fetch('/api/auth/verify-email/send-code', {
+        method: 'POST',
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError('Ошибка при отправке кода');
+        setSuccess('');
+        return;
+      }
+
+      if (data.code) {
+        setSuccess(`Email не настроен. Код для демо: ${data.code}`);
+      } else {
+        setSuccess('Код отправлен повторно на ваш email');
+      }
+    } catch (err) {
+      setError('Ошибка сервера');
+      setSuccess('');
+    }
+  };
+
   return (
     <div className="space-y-6">
       {error && (
@@ -162,74 +186,53 @@ export function VerifyEmailForm({ email }: VerifyEmailFormProps) {
         </div>
       )}
 
-      {!codeSent ? (
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 text-center">
+            Введите 6-значный код
+          </label>
+          <div className="flex gap-2 justify-center">
+            {code.map((digit, index) => (
+              <input
+                key={index}
+                ref={(el) => (inputRefs.current[index] = el)}
+                type="text"
+                inputMode="numeric"
+                maxLength={1}
+                value={digit}
+                onChange={(e) => handleCodeChange(index, e.target.value)}
+                onKeyDown={(e) => handleKeyDown(index, e)}
+                onPaste={index === 0 ? handlePaste : undefined}
+                className="w-12 h-14 text-center text-2xl font-bold border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 dark:bg-gray-700 dark:text-white transition-all"
+                disabled={isLoading}
+              />
+            ))}
+          </div>
+        </div>
+
         <button
-          onClick={handleSendCode}
-          disabled={isSending}
+          type="submit"
+          disabled={isLoading || code.some(digit => digit === '')}
           className="w-full bg-gradient-to-r from-emerald-500 to-teal-600 text-white py-3 rounded-lg font-semibold hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
         >
-          {isSending ? (
+          {isLoading ? (
             <>
               <Loader2 className="w-5 h-5 animate-spin" />
-              Отправка...
+              Проверка...
             </>
           ) : (
-            <>
-              <Mail className="w-5 h-5" />
-              Отправить код на email
-            </>
+            'Подтвердить'
           )}
         </button>
-      ) : (
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 text-center">
-              Введите 6-значный код
-            </label>
-            <div className="flex gap-2 justify-center">
-              {code.map((digit, index) => (
-                <input
-                  key={index}
-                  ref={(el) => (inputRefs.current[index] = el)}
-                  type="text"
-                  inputMode="numeric"
-                  maxLength={1}
-                  value={digit}
-                  onChange={(e) => handleCodeChange(index, e.target.value)}
-                  onKeyDown={(e) => handleKeyDown(index, e)}
-                  onPaste={index === 0 ? handlePaste : undefined}
-                  className="w-12 h-14 text-center text-2xl font-bold border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 dark:bg-gray-700 dark:text-white transition-all"
-                  disabled={isLoading}
-                />
-              ))}
-            </div>
-          </div>
 
-          <button
-            type="submit"
-            disabled={isLoading || code.some(digit => digit === '')}
-            className="w-full bg-gradient-to-r from-emerald-500 to-teal-600 text-white py-3 rounded-lg font-semibold hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-          >
-            {isLoading ? (
-              <>
-                <Loader2 className="w-5 h-5 animate-spin" />
-                Проверка...
-              </>
-            ) : (
-              'Подтвердить'
-            )}
-          </button>
-
-          <button
-            type="button"
-            onClick={handleSendCode}
-            disabled={isSending}
-            className="w-full text-emerald-600 dark:text-emerald-400 hover:underline text-sm disabled:opacity-50"
-          >
-            {isSending ? 'Отправка...' : 'Отправить код повторно'}
-          </button>
-        </form>
-      )}
+        <button
+          type="button"
+          onClick={handleResendCode}
+          className="w-full text-emerald-600 dark:text-emerald-400 hover:underline text-sm"
+        >
+          Отправить код повторно
+        </button>
+      </form>
     </div>
   );
 }

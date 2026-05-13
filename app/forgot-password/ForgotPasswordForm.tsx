@@ -3,6 +3,7 @@
 import { useState, useRef, KeyboardEvent, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Mail, Lock, Loader2, CheckCircle } from 'lucide-react';
+import { getPasswordRequirements } from '@/lib/auth/password-validation';
 
 interface ForgotPasswordFormProps {
   initialEmail?: string;
@@ -19,7 +20,11 @@ export function ForgotPasswordForm({ initialEmail = '' }: ForgotPasswordFormProp
   const [verifiedCode, setVerifiedCode] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPasswordRequirements, setShowPasswordRequirements] = useState(false);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  // Проверка требований к паролю
+  const passwordRequirements = getPasswordRequirements(newPassword);
 
   // Автоматически отправляем код, если email передан
   useEffect(() => {
@@ -116,13 +121,41 @@ export function ForgotPasswordForm({ initialEmail = '' }: ForgotPasswordFormProp
     setSuccess('Код принят! Теперь введите новый пароль');
   };
 
+  const validatePassword = (password: string): { valid: boolean; error?: string } => {
+    const reqs = getPasswordRequirements(password);
+    
+    if (!reqs.minLength) {
+      return { valid: false, error: 'Пароль должен содержать минимум 8 символов' };
+    }
+    
+    if (!reqs.hasLowerCase) {
+      return { valid: false, error: 'Пароль должен содержать хотя бы одну строчную букву' };
+    }
+    
+    if (!reqs.hasUpperCase) {
+      return { valid: false, error: 'Пароль должен содержать хотя бы одну заглавную букву' };
+    }
+    
+    if (!reqs.hasNumber) {
+      return { valid: false, error: 'Пароль должен содержать хотя бы одну цифру' };
+    }
+    
+    if (!reqs.hasSpecialChar) {
+      return { valid: false, error: 'Пароль должен содержать хотя бы один специальный символ (!@#$%^&* и т.д.)' };
+    }
+    
+    return { valid: true };
+  };
+
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setSuccess('');
 
-    if (newPassword.length < 8) {
-      setError('Пароль должен быть минимум 8 символов');
+    // Валидация сложного пароля
+    const passwordValidation = validatePassword(newPassword);
+    if (!passwordValidation.valid) {
+      setError(passwordValidation.error || 'Пароль не соответствует требованиям');
       return;
     }
 
@@ -151,17 +184,21 @@ export function ForgotPasswordForm({ initialEmail = '' }: ForgotPasswordFormProp
           'Invalid or expired code': 'Неверный или истекший код',
           'Code expired': 'Код истек. Запросите новый',
           'Invalid code': 'Неверный код',
-          'Password too short': 'Пароль слишком короткий',
+          'Password must be at least 8 characters': 'Пароль должен содержать минимум 8 символов',
+          'Password must contain at least one lowercase letter': 'Пароль должен содержать хотя бы одну строчную букву',
+          'Password must contain at least one uppercase letter': 'Пароль должен содержать хотя бы одну заглавную букву',
+          'Password must contain at least one number': 'Пароль должен содержать хотя бы одну цифру',
+          'Password must contain at least one special character': 'Пароль должен содержать хотя бы один специальный символ',
         };
         setError(errorMessages[data.error] || 'Ошибка при сбросе пароля');
         return;
       }
 
-      setSuccess('Пароль успешно изменен! Перенаправление...');
+      setSuccess('Пароль успешно изменен! Перенаправление в профиль...');
       
       setTimeout(() => {
-        router.push('/login');
-      }, 2000);
+        router.push('/dashboard');
+      }, 1500);
     } catch (err) {
       setError('Ошибка сервера');
     } finally {
@@ -343,12 +380,42 @@ export function ForgotPasswordForm({ initialEmail = '' }: ForgotPasswordFormProp
             required
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
+            onFocus={() => setShowPasswordRequirements(true)}
             className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
-            placeholder="Минимум 8 символов"
+            placeholder="Минимум 8 символов, буквы, цифры, спецсимволы"
             minLength={8}
             autoFocus
           />
         </div>
+        
+        {/* Индикатор требований к паролю */}
+        {showPasswordRequirements && newPassword && (
+          <div className="mt-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg space-y-2">
+            <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">Требования к паролю:</p>
+            <div className="space-y-1">
+              <div className={`flex items-center gap-2 text-xs ${passwordRequirements.minLength ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}`}>
+                <CheckCircle className={`w-3 h-3 ${passwordRequirements.minLength ? 'opacity-100' : 'opacity-30'}`} />
+                <span>Минимум 8 символов</span>
+              </div>
+              <div className={`flex items-center gap-2 text-xs ${passwordRequirements.hasLowerCase ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}`}>
+                <CheckCircle className={`w-3 h-3 ${passwordRequirements.hasLowerCase ? 'opacity-100' : 'opacity-30'}`} />
+                <span>Строчная буква (a-z)</span>
+              </div>
+              <div className={`flex items-center gap-2 text-xs ${passwordRequirements.hasUpperCase ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}`}>
+                <CheckCircle className={`w-3 h-3 ${passwordRequirements.hasUpperCase ? 'opacity-100' : 'opacity-30'}`} />
+                <span>Заглавная буква (A-Z)</span>
+              </div>
+              <div className={`flex items-center gap-2 text-xs ${passwordRequirements.hasNumber ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}`}>
+                <CheckCircle className={`w-3 h-3 ${passwordRequirements.hasNumber ? 'opacity-100' : 'opacity-30'}`} />
+                <span>Цифра (0-9)</span>
+              </div>
+              <div className={`flex items-center gap-2 text-xs ${passwordRequirements.hasSpecialChar ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}`}>
+                <CheckCircle className={`w-3 h-3 ${passwordRequirements.hasSpecialChar ? 'opacity-100' : 'opacity-30'}`} />
+                <span>Спецсимвол (!@#$%^&*)</span>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       <div>
