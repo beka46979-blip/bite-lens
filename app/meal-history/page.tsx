@@ -3,6 +3,7 @@ import { getCurrentUser } from '@/lib/auth/session';
 import { MealHistoryClient } from './MealHistoryClient';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
+import { ThemeToggle } from '@/app/components/ThemeToggle';
 
 export default async function MealHistoryPage() {
   const currentUser = await getCurrentUser();
@@ -31,6 +32,7 @@ export default async function MealHistoryPage() {
                 Просмотрите все ваши сохранённые приёмы пищи
               </p>
             </div>
+            <ThemeToggle />
           </div>
         </div>
       </div>

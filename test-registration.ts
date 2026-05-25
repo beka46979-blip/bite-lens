@@ -28,11 +28,12 @@ async function testRegistration() {
 
     const passwordHash = await hashPassword('testpassword123');
     
-    const user = await prisma.user.create({
+    const user = await prisma.users.create({
       data: {
+        id: crypto.randomUUID(),
         email: testEmail,
-        passwordHash,
-        onboardingCompleted: false,
+        password_hash: passwordHash,
+        onboarding_completed: false,
       },
     });
 
@@ -40,12 +41,12 @@ async function testRegistration() {
     console.log({
       id: user.id,
       email: user.email,
-      onboardingCompleted: user.onboardingCompleted,
-      createdAt: user.createdAt,
+      onboarding_completed: user.onboarding_completed,
+      created_at: user.created_at,
     });
 
     // Удаление тестового пользователя
-    await prisma.user.delete({
+    await prisma.users.delete({
       where: { id: user.id },
     });
     console.log('🗑️  Тестовый пользователь удален');

@@ -74,6 +74,8 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
+    console.log('Profile update request body:', JSON.stringify(body, null, 2));
+    
     const data = profileSchema.parse(body);
 
     // Нормализуем gender к верхнему регистру
@@ -131,20 +133,26 @@ export async function POST(request: NextRequest) {
     dailyKcalTarget = Math.round(dailyKcalTarget);
 
     // Обновляем профиль пользователя
+    const updateData: any = {
+      name: data.name,
+      gender: normalizedGender,
+      birth_date: birthDate,
+      height_cm: data.heightCm,
+      weight_start: data.weightStart,
+      weight_goal: data.weightGoal,
+      activity_level: activityLevelNum,
+      daily_kcal_target: dailyKcalTarget,
+      onboarding_completed: data.onboardingCompleted ?? true,
+    };
+
+    // Обновляем avatar только если он передан
+    if (data.avatar !== undefined) {
+      updateData.avatar = data.avatar || null;
+    }
+
     const user = await prisma.users.update({
       where: { id: currentUser.userId },
-      data: {
-        name: data.name,
-        avatar: data.avatar || null,
-        gender: normalizedGender,
-        birth_date: birthDate,
-        height_cm: data.heightCm,
-        weight_start: data.weightStart,
-        weight_goal: data.weightGoal,
-        activity_level: activityLevelNum,
-        daily_kcal_target: dailyKcalTarget,
-        onboarding_completed: data.onboardingCompleted ?? true,
-      },
+      data: updateData,
     });
 
     return NextResponse.json({
@@ -158,8 +166,9 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
+      console.error('Profile validation error:', JSON.stringify(error.issues, null, 2));
       return NextResponse.json(
-        { error: 'validation', details: error.errors },
+        { error: 'validation', details: error.issues },
         { status: 400 }
       );
     }

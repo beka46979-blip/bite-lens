@@ -137,6 +137,7 @@ export async function GET(request: NextRequest) {
         // Создаем нового пользователя
         user = await prisma.users.create({
           data: {
+            id: crypto.randomUUID(),
             email: googleUser.email,
             google_id: googleId,
             name: googleUser.name,

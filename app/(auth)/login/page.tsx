@@ -2,6 +2,7 @@ import { getLocaleFromCookie } from '@/app/i18n/cookies';
 import { LoginForm } from './LoginForm';
 import { getTranslations } from '@/app/i18n';
 import Link from 'next/link';
+import { ThemeToggle } from '@/app/components/ThemeToggle';
 
 export default async function LoginPage() {
   const locale = await getLocaleFromCookie();
@@ -9,6 +10,11 @@ export default async function LoginPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
+      {/* Theme Toggle - Fixed Position */}
+      <div className="fixed top-4 right-4 z-50">
+        <ThemeToggle />
+      </div>
+
       <div className="w-full max-w-md">
         {/* Logo */}
         <Link href="/" className="flex items-center justify-center gap-2 mb-8">

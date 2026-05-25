@@ -1,221 +1,973 @@
-import { redirect } from 'next/navigation';
-import { getCurrentUser } from '@/lib/auth/session';
-import { prisma } from '@/lib/prisma';
-import { LogoutButton } from './LogoutButton';
-import Link from 'next/link';
-import { User, Target, Activity, TrendingDown, TrendingUp } from 'lucide-react';
+import { redirect } from "next/navigation";
+import { getCurrentUser } from "@/lib/auth/session";
+import { prisma } from "@/lib/prisma";
+import { LogoutButton } from "./LogoutButton";
+import { ThemeToggle } from "@/app/components/ThemeToggle";
+import Link from "next/link";
+import {
+  Flame,
+  Camera,
+  History,
+  ChevronRight,
+  Beef,
+  Droplet,
+  Wheat,
+  Check,
+  Zap,
+  Crown,
+  Activity,
+  Target,
+  TrendingDown,
+  TrendingUp,
+  Scale,
+  CalendarDays,
+  LogOut,
+  Sparkles,
+} from "lucide-react";
 
+// ── Milestone ──────────────────────────────────────────────────────────────────
+function streakMilestone(s: number) {
+  if (s >= 30)
+    return { color: "#c4b5fd", border: "rgba(167,139,250,0.3)", bg: "rgba(139,92,246,0.1)", label: "Elite Consistency" };
+  if (s >= 7)
+    return { color: "#7dd3fc", border: "rgba(56,189,248,0.3)", bg: "rgba(56,189,248,0.1)", label: "Weekly Warrior" };
+  if (s >= 3)
+    return { color: "#fb923c", border: "rgba(249,115,22,0.3)", bg: "rgba(249,115,22,0.1)", label: "Momentum" };
+  return { color: "#fb923c", border: "rgba(249,115,22,0.25)", bg: "rgba(249,115,22,0.08)", label: "Getting started" };
+}
+
+// ── Plans ──────────────────────────────────────────────────────────────────────
+const PLANS = [
+  {
+    key: "FREE",
+    name: "Free",
+    Icon: Scale,
+    price: null,
+    priceLabel: "0 сом",
+    badge: null,
+    accent: "#10b981",
+    accentBg: "rgba(16,185,129,0.1)",
+    accentBorder: "rgba(16,185,129,0.2)",
+    btnStyle: "outlined" as const,
+    features: ["Трекер калорий", "3 приёма в день", "Базовые макро", "Без AI-сканирования", "Без аналитики"],
+  },
+  {
+    key: "PREMIUM",
+    name: "Pro",
+    Icon: Zap,
+    price: 490,
+    priceLabel: "490 сом",
+    badge: "ПОПУЛЯРНЫЙ",
+    accent: "#10b981",
+    accentBg: "rgba(16,185,129,0.1)",
+    accentBorder: "rgba(16,185,129,0.3)",
+    btnStyle: "green" as const,
+    features: ["Всё из Free", "AI-сканирование", "Неограниченные снапы", "Детальная аналитика", "Персональный план"],
+  },
+  {
+    key: "PRO",
+    name: "Premium",
+    Icon: Crown,
+    price: 890,
+    priceLabel: "890 сом",
+    badge: "ЛУЧШИЙ",
+    accent: "#f59e0b",
+    accentBg: "rgba(245,158,11,0.1)",
+    accentBorder: "rgba(245,158,11,0.3)",
+    btnStyle: "amber" as const,
+    features: ["Всё из Pro", "AI-тренер 24/7", "Рецепты под план", "Приоритетная поддержка", "Ранний доступ"],
+  },
+];
+
+// ── Page ───────────────────────────────────────────────────────────────────────
 export default async function DashboardPage() {
   const currentUser = await getCurrentUser();
-
-  if (!currentUser) {
-    redirect('/login');
-  }
+  if (!currentUser) redirect("/login");
 
   const user = await prisma.users.findUnique({
     where: { id: currentUser.userId },
     select: {
-      id: true,
-      email: true,
-      name: true,
-      avatar: true,
-      gender: true,
-      weight_start: true,
-      weight_goal: true,
-      daily_kcal_target: true,
-      onboarding_completed: true,
+      id: true, email: true, name: true, avatar: true,
+      gender: true, weight_start: true, weight_goal: true,
+      daily_kcal_target: true, onboarding_completed: true,
     },
   });
 
-  if (!user) {
-    redirect('/login');
+  if (!user) redirect("/login");
+  if (!user.onboarding_completed) redirect("/profile");
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const [dailySummary, streak, subscription, recentMeals, recentActivityDays] =
+    await Promise.all([
+      prisma.daily_nutrition_summary.findUnique({
+        where: { user_id_date: { user_id: currentUser.userId, date: today } },
+      }),
+      prisma.streaks.findUnique({ where: { user_id: currentUser.userId } }),
+      prisma.subscriptions.findFirst({
+        where: { user_id: currentUser.userId },
+        orderBy: { created_at: "desc" },
+      }),
+      prisma.food_snaps.findMany({
+        where: { user_id: currentUser.userId, created_at: { gte: today } },
+        orderBy: { created_at: "desc" },
+        take: 4,
+        select: { id: true, image_url: true, dish_name: true, calories: true, created_at: true },
+      }),
+      prisma.daily_nutrition_summary.findMany({
+        where: {
+          user_id: currentUser.userId,
+          date: {
+            gte: (() => {
+              const d = new Date(today);
+              d.setDate(d.getDate() - 6);
+              return d;
+            })(),
+          },
+        },
+        select: { date: true },
+      }),
+    ]);
+
+  // ── Streak ─────────────────────────────────────────────────────────────────
+  let activeStreak = 0;
+  let isStreakActive = false;
+  let isLoggedToday = false;
+
+  if (streak) {
+    const lastLog = new Date(streak.last_log_date);
+    lastLog.setHours(0, 0, 0, 0);
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    isLoggedToday = lastLog.getTime() === today.getTime();
+    if (isLoggedToday || lastLog.getTime() === yesterday.getTime()) {
+      activeStreak = streak.current_streak;
+      isStreakActive = true;
+    }
   }
 
-  // Если профиль не заполнен, перенаправляем на страницу профиля
-  if (!user.onboarding_completed) {
-    redirect('/profile');
+  const milestone = streakMilestone(activeStreak);
+
+  const activeDays = new Set(
+    recentActivityDays.map((d) => d.date.toISOString().split("T")[0]),
+  );
+  const last7Days = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(today);
+    d.setDate(d.getDate() - (6 - i));
+    return {
+      dateStr: d.toISOString().split("T")[0],
+      label: d.toLocaleDateString("ru-RU", { weekday: "short" }).slice(0, 2).toUpperCase(),
+      isToday: i === 6,
+    };
+  });
+
+  // ── Calorie stats ──────────────────────────────────────────────────────────
+  const dailyTarget = user.daily_kcal_target || 2000;
+  const consumed = dailySummary?.total_calories || 0;
+  const proteins = dailySummary?.total_proteins ? Number(dailySummary.total_proteins) : 0;
+  const fats = dailySummary?.total_fats ? Number(dailySummary.total_fats) : 0;
+  const carbs = dailySummary?.total_carbs ? Number(dailySummary.total_carbs) : 0;
+  const remaining = Math.max(0, dailyTarget - consumed);
+  const pct = dailyTarget > 0 ? Math.min(100, Math.round((consumed / dailyTarget) * 100)) : 0;
+  const isOver = consumed > dailyTarget && dailyTarget > 0;
+  const snapsCount = dailySummary?.snaps_count || 0;
+
+  const proteinTarget = Math.round((dailyTarget * 0.3) / 4);
+  const fatTarget = Math.round((dailyTarget * 0.3) / 9);
+  const carbTarget = Math.round((dailyTarget * 0.4) / 4);
+  const proteinPct = proteinTarget > 0 ? Math.min(100, Math.round((proteins / proteinTarget) * 100)) : 0;
+  const fatPct = fatTarget > 0 ? Math.min(100, Math.round((fats / fatTarget) * 100)) : 0;
+  const carbPct = carbTarget > 0 ? Math.min(100, Math.round((carbs / carbTarget) * 100)) : 0;
+
+  // Ring SVG (radius 68, size 180×180)
+  const R = 68;
+  const CIRC = 2 * Math.PI * R;
+  const ringOffset = CIRC - (pct / 100) * CIRC;
+  const ringColor = isOver ? "#ef4444" : pct >= 90 ? "#f59e0b" : "#10b981";
+
+  // Weight / goal
+  const wStart = user.weight_start ? Number(user.weight_start) : 0;
+  const wGoal = user.weight_goal ? Number(user.weight_goal) : 0;
+  const wDiff = wStart - wGoal;
+  const goalType = wDiff > 0 ? "lose" : wDiff < 0 ? "gain" : "maintain";
+
+  // Subscription
+  const currentPlan = subscription?.plan_type ?? "FREE";
+  let trialDaysLeft: number | null = null;
+  if (subscription?.status === "TRIAL" && subscription.trial_ends_at) {
+    const ms = subscription.trial_ends_at.getTime() - Date.now();
+    trialDaysLeft = Math.max(0, Math.ceil(ms / (1000 * 60 * 60 * 24)));
   }
 
-  // Конвертируем Decimal в number
-  const weightStart = user.weight_start ? Number(user.weight_start) : 0;
-  const weightGoal = user.weight_goal ? Number(user.weight_goal) : 0;
-  const weightDiff = weightStart - weightGoal;
-  const goalType = weightDiff > 0 ? 'lose' : weightDiff < 0 ? 'gain' : 'maintain';
+  const todayStr = today.toLocaleDateString("ru-RU", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  });
 
+  // ── JSX ────────────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800">
-      <header className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg shadow-sm border-b border-emerald-100 dark:border-gray-700">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-5">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
+    <div className="min-h-screen bg-[#f0f2f8] dark:bg-[#080b14] pb-28 relative">
+
+      {/* ── Ambient glow blobs ──────────────────────────────────────────── */}
+      <div className="dash-ambient-green" aria-hidden />
+      <div className="dash-ambient-purple" aria-hidden />
+
+      {/* ── Header ──────────────────────────────────────────────────────── */}
+      <header
+        className="sticky top-0 z-30"
+        style={{
+          background: "rgba(240,242,248,0.85)",
+          borderBottom: "1px solid rgba(0,0,0,0.06)",
+          backdropFilter: "blur(28px)",
+          WebkitBackdropFilter: "blur(28px)",
+        }}
+      >
+        <div
+          className="absolute inset-0 hidden dark:block pointer-events-none"
+          style={{
+            background: "rgba(8,11,20,0.88)",
+            borderBottom: "1px solid rgba(255,255,255,0.055)",
+          }}
+        />
+        <div className="max-w-lg mx-auto px-4 relative">
+          <div className="flex items-center justify-between h-14">
+            <Link href="/profile" className="flex items-center gap-2.5 min-w-0 group">
               {user.avatar ? (
-                <div className="relative flex-shrink-0">
-                  <img 
-                    src={user.avatar} 
-                    alt={user.name || 'User'} 
-                    className="w-10 h-10 sm:w-12 sm:h-12 rounded-full ring-2 ring-emerald-500/20"
-                  />
-                  <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 sm:w-4 sm:h-4 bg-emerald-500 rounded-full border-2 border-white dark:border-gray-800"></div>
-                </div>
+                <img
+                  src={user.avatar}
+                  alt={user.name || ""}
+                  className="w-8 h-8 rounded-full object-cover ring-2 ring-emerald-400/25 flex-shrink-0"
+                />
               ) : (
-                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
-                  {user.name?.[0]?.toUpperCase() || 'U'}
+                <div
+                  className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0"
+                  style={{ background: "linear-gradient(135deg, #f59e0b, #ef4444)" }}
+                >
+                  {user.name?.[0]?.toUpperCase() || "У"}
                 </div>
               )}
-              <div className="min-w-0 flex-1">
-                <h1 className="text-lg sm:text-xl lg:text-2xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 dark:from-emerald-400 dark:to-teal-400 bg-clip-text text-transparent truncate">
-                  {user.name ? `Привет, ${user.name}!` : 'Добро пожаловать!'}
-                </h1>
-                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 truncate">{user.email}</p>
+              <div className="min-w-0">
+                <p className="text-[13px] font-bold text-gray-900 dark:text-white truncate leading-tight font-display">
+                  {user.name || "Профиль"}
+                </p>
+                <p className="text-[11px] text-gray-400 dark:text-gray-500 capitalize truncate">
+                  {todayStr}
+                </p>
               </div>
-            </div>
-            <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-              <Link
-                href="/profile"
-                className="px-3 sm:px-4 py-2 text-sm sm:text-base text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-xl transition-all hover:scale-105"
-              >
-                <span className="hidden sm:inline">Профиль</span>
-                <User className="w-5 h-5 sm:hidden" />
-              </Link>
+            </Link>
+            <div className="flex items-center gap-1 flex-shrink-0">
+              <ThemeToggle />
               <LogoutButton />
             </div>
           </div>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-10">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
-          {/* Текущий вес */}
-          <div className="group bg-white dark:bg-gray-800 rounded-2xl shadow-lg hover:shadow-xl p-5 sm:p-6 transition-all duration-300 hover:scale-105 border border-blue-100 dark:border-blue-900/30">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-blue-400 to-blue-600 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:rotate-6 transition-transform duration-300">
-                <Activity className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
+      {/* ── Main ────────────────────────────────────────────────────────── */}
+      <main className="max-w-lg mx-auto px-3.5 py-4 space-y-3 relative z-10">
+
+        {/* ── Streak card ─────────────────────────────────────────────── */}
+        <div
+          className="dash-glass dash-enter rounded-2xl p-4 relative overflow-hidden"
+          style={{ "--enter-delay": "0.05s" } as React.CSSProperties}
+        >
+          {/* Active streak: warm glow overlay */}
+          {isStreakActive && (
+            <div
+              className="absolute inset-0 rounded-2xl pointer-events-none"
+              style={{ background: "linear-gradient(135deg, rgba(249,115,22,0.06) 0%, transparent 60%)" }}
+            />
+          )}
+
+          <div className="relative">
+            {/* Labels row */}
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-1.5">
+                <Flame
+                  className={`w-3.5 h-3.5 ${isStreakActive ? "animate-flame" : ""}`}
+                  style={{ color: isStreakActive ? milestone.color : "#6b7280" }}
+                />
+                <span
+                  className="text-[10px] font-black uppercase tracking-widest"
+                  style={{ color: isStreakActive ? milestone.color : "#6b7280" }}
+                >
+                  Ударный режим
+                </span>
               </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 font-medium mb-1">Текущий вес</p>
-                <p className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 dark:from-blue-400 dark:to-blue-600 bg-clip-text text-transparent truncate">
-                  {weightStart ? `${weightStart.toFixed(1)} кг` : 'Не указан'}
-                </p>
+              <div className="flex items-center gap-1">
+                <CalendarDays className="w-3 h-3 text-gray-400 dark:text-gray-500" />
+                <span className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+                  7 дней
+                </span>
               </div>
             </div>
-          </div>
 
-          {/* Целевой вес */}
-          <div className="group bg-white dark:bg-gray-800 rounded-2xl shadow-lg hover:shadow-xl p-5 sm:p-6 transition-all duration-300 hover:scale-105 border border-emerald-100 dark:border-emerald-900/30">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:rotate-6 transition-transform duration-300">
-                <Target className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 font-medium mb-1">Целевой вес</p>
-                <p className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-emerald-600 to-emerald-800 dark:from-emerald-400 dark:to-emerald-600 bg-clip-text text-transparent truncate">
-                  {weightGoal ? `${weightGoal.toFixed(1)} кг` : 'Не указан'}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Разница */}
-          <div className={`group bg-white dark:bg-gray-800 rounded-2xl shadow-lg hover:shadow-xl p-5 sm:p-6 sm:col-span-2 lg:col-span-1 transition-all duration-300 hover:scale-105 border ${
-            goalType === 'lose' 
-              ? 'border-orange-100 dark:border-orange-900/30' 
-              : goalType === 'gain'
-              ? 'border-purple-100 dark:border-purple-900/30'
-              : 'border-gray-200 dark:border-gray-700'
-          }`}>
-            <div className="flex items-center gap-4">
-              <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:rotate-6 transition-transform duration-300 ${
-                goalType === 'lose' 
-                  ? 'bg-gradient-to-br from-orange-400 to-orange-600' 
-                  : goalType === 'gain'
-                  ? 'bg-gradient-to-br from-purple-400 to-purple-600'
-                  : 'bg-gradient-to-br from-gray-400 to-gray-600'
-              }`}>
-                {goalType === 'lose' ? (
-                  <TrendingDown className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
-                ) : goalType === 'gain' ? (
-                  <TrendingUp className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
-                ) : (
-                  <Target className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
-                )}
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 font-medium mb-1">
-                  {goalType === 'lose' ? 'Нужно сбросить' : goalType === 'gain' ? 'Нужно набрать' : 'Поддержание'}
-                </p>
-                <p className={`text-2xl sm:text-3xl font-bold bg-gradient-to-r bg-clip-text text-transparent truncate ${
-                  goalType === 'lose' 
-                    ? 'from-orange-600 to-orange-800 dark:from-orange-400 dark:to-orange-600' 
-                    : goalType === 'gain'
-                    ? 'from-purple-600 to-purple-800 dark:from-purple-400 dark:to-purple-600'
-                    : 'from-gray-600 to-gray-800 dark:from-gray-400 dark:to-gray-600'
-                }`}>
-                  {Math.abs(weightDiff).toFixed(1)} кг
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Дневная норма калорий */}
-          <div className="relative bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-500 rounded-2xl sm:rounded-3xl shadow-xl p-6 sm:p-8 text-white sm:col-span-2 lg:col-span-3 overflow-hidden group">
-            {/* Animated background circles */}
-            <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full blur-3xl group-hover:scale-150 transition-transform duration-700"></div>
-            <div className="absolute bottom-0 left-0 w-32 h-32 bg-white/10 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-700"></div>
-            
-            <div className="relative flex items-center justify-between gap-6">
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2 mb-2">
-                  <Activity className="w-5 h-5 text-white/80" />
-                  <p className="text-sm sm:text-base text-white/90 font-medium">Ваша дневная норма калорий</p>
+            {/* Counter + day dots */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                {/* Flame icon with glow */}
+                <div className="relative flex-shrink-0">
+                  {isStreakActive && (
+                    <div
+                      className="absolute inset-0 blur-2xl rounded-full scale-150 pointer-events-none"
+                      style={{ background: `${milestone.color}35` }}
+                    />
+                  )}
+                  <Flame
+                    className={`relative w-11 h-11 ${isStreakActive ? "animate-flame" : "opacity-20 grayscale"}`}
+                    style={{ color: milestone.color }}
+                  />
                 </div>
-                <p className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-2 truncate">
-                  {user.daily_kcal_target ? `${user.daily_kcal_target} ккал` : 'Не рассчитана'}
-                </p>
-                <p className="text-sm sm:text-base text-white/80">
-                  Основано на вашем профиле и уровне активности
-                </p>
-              </div>
-              <div className="hidden sm:flex flex-shrink-0">
-                <div className="w-20 h-20 sm:w-24 sm:h-24 lg:w-28 lg:h-28 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center group-hover:rotate-12 transition-transform duration-500">
-                  <Activity className="w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14" />
+
+                {/* Number */}
+                <div>
+                  <div className="flex items-baseline gap-1.5">
+                    <span
+                      className={`text-[40px] leading-none font-display font-black tabular-nums ${isStreakActive ? "text-gray-900 dark:text-white" : "text-gray-300 dark:text-gray-700"}`}
+                    >
+                      {activeStreak}
+                    </span>
+                    <span className="text-sm font-semibold text-gray-400 dark:text-gray-500 mb-0.5">
+                      {activeStreak === 1 ? "день" : activeStreak <= 4 ? "дня" : "дней"}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-gray-400 dark:text-gray-500">
+                    Рекорд: {streak?.max_streak || 0} дн.
+                  </p>
                 </div>
               </div>
+
+              {/* 7 day dots */}
+              <div className="flex items-center gap-1.5">
+                {last7Days.map(({ dateStr, label, isToday }) => {
+                  const active = activeDays.has(dateStr);
+                  return (
+                    <div key={dateStr} className="flex flex-col items-center gap-0.5">
+                      <div
+                        className="w-7 h-7 rounded-full flex items-center justify-center transition-all"
+                        style={
+                          active
+                            ? { background: milestone.color, boxShadow: `0 0 10px ${milestone.color}55` }
+                            : isToday
+                              ? { background: "rgba(255,255,255,0.06)", border: `1.5px dashed ${milestone.color}80` }
+                              : { background: "rgba(156,163,175,0.12)", border: "1.5px solid rgba(156,163,175,0.2)" }
+                        }
+                      >
+                        {active ? (
+                          <Check className="w-3.5 h-3.5 text-white" strokeWidth={3} />
+                        ) : (
+                          <span className="text-[8px] font-bold text-gray-400 dark:text-gray-600">{label}</span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Status pill */}
+            <div className="mt-3 flex justify-between items-center">
+              <span
+                className="text-[10px] font-bold text-gray-400 dark:text-gray-500"
+                style={{ fontFamily: "var(--font-dm-sans)" }}
+              >
+                {isStreakActive ? milestone.label : "Начни трекинг"}
+              </span>
+              {isLoggedToday ? (
+                <span
+                  className="inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-full"
+                  style={{ background: "rgba(16,185,129,0.1)", color: "#10b981", border: "1px solid rgba(16,185,129,0.25)" }}
+                >
+                  <Check className="w-3 h-3" strokeWidth={3} />
+                  Выполнено
+                </span>
+              ) : isStreakActive ? (
+                <span
+                  className="inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-full"
+                  style={{ background: milestone.bg, color: milestone.color, border: `1px solid ${milestone.border}` }}
+                >
+                  <Flame className="w-3 h-3" />
+                  Не пропусти!
+                </span>
+              ) : null}
             </div>
           </div>
         </div>
 
-        {/* Информационный блок */}
-        <div className="mt-8 sm:mt-10 bg-white dark:bg-gray-800 rounded-2xl sm:rounded-3xl shadow-xl p-6 sm:p-8 border border-gray-100 dark:border-gray-700">
-          <h2 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 dark:from-emerald-400 dark:to-teal-400 bg-clip-text text-transparent mb-3 sm:mb-4">
-            Начните отслеживать свое питание
-          </h2>
-          <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mb-6 leading-relaxed">
-            Bite Lens поможет вам достичь ваших целей по весу через умный анализ питания и персонализированные рекомендации.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+        {/* ── 2-col: Calories | Weight+Goal ───────────────────────────── */}
+        <div className="grid grid-cols-2 gap-3">
+
+          {/* Calories card */}
+          <div
+            className="dash-glass dash-glow-green dash-enter dash-hover rounded-2xl p-4 flex flex-col"
+            style={{ "--enter-delay": "0.12s" } as React.CSSProperties}
+          >
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-[12px] font-semibold text-gray-600 dark:text-gray-400">Калории</p>
+              <span
+                className="text-[9px] font-black px-2 py-0.5 rounded-full"
+                style={
+                  isOver
+                    ? { background: "rgba(239,68,68,0.1)", color: "#ef4444", border: "1px solid rgba(239,68,68,0.2)" }
+                    : { background: "rgba(16,185,129,0.1)", color: "#10b981", border: "1px solid rgba(16,185,129,0.2)" }
+                }
+              >
+                {isOver ? "Превышение" : "В норме"}
+              </span>
+            </div>
+
+            {/* Animated donut ring */}
+            <div className="flex justify-center my-1">
+              <div className="relative">
+                <svg width="144" height="144" className="-rotate-90">
+                  {/* Track */}
+                  <circle cx="72" cy="72" r={R} fill="none" strokeWidth="11"
+                    className="stroke-gray-100 dark:stroke-white/5" />
+                  {/* Fill — animated */}
+                  <circle
+                    cx="72" cy="72" r={R} fill="none" strokeWidth="11"
+                    strokeLinecap="round"
+                    strokeDasharray={CIRC}
+                    strokeDashoffset={ringOffset}
+                    className="dash-ring"
+                    style={{
+                      stroke: ringColor,
+                      filter: `drop-shadow(0 0 8px ${ringColor}80)`,
+                      "--ring-from": String(Math.ceil(CIRC)),
+                      "--ring-to": String(Math.round(ringOffset)),
+                    } as React.CSSProperties}
+                  />
+                </svg>
+                {/* Center text */}
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <p
+                    className="text-[26px] leading-none font-black text-gray-900 dark:text-white font-display"
+                    style={{ color: ringColor }}
+                  >
+                    {consumed}
+                  </p>
+                  <p className="text-[9px] text-gray-400 dark:text-gray-500 mt-0.5">из {dailyTarget}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Stats */}
+            <div className="space-y-1.5 mt-1">
+              <div className="flex items-center gap-2">
+                <div className="w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0"
+                  style={{ background: "rgba(16,185,129,0.12)" }}>
+                  <Flame className="w-3 h-3" style={{ color: "#10b981" }} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[10px] text-gray-400 dark:text-gray-500 leading-none">Съедено</p>
+                  <p className="text-[13px] font-black font-display text-gray-800 dark:text-gray-100 leading-tight">
+                    {consumed}
+                    <span className="text-[9px] font-normal text-gray-400 ml-0.5">ккал</span>
+                  </p>
+                </div>
+                <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500">{pct}%</span>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <div className="w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0"
+                  style={{ background: isOver ? "rgba(239,68,68,0.1)" : "rgba(20,184,166,0.1)" }}>
+                  <Target className="w-3 h-3" style={{ color: isOver ? "#ef4444" : "#14b8a6" }} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[10px] text-gray-400 dark:text-gray-500 leading-none">
+                    {isOver ? "Превышение" : "Осталось"}
+                  </p>
+                  <p className="text-[13px] font-black font-display leading-tight"
+                    style={{ color: isOver ? "#ef4444" : undefined }}>
+                    <span className="text-gray-800 dark:text-gray-100">
+                      {isOver ? consumed - dailyTarget : remaining}
+                    </span>
+                    <span className="text-[9px] font-normal text-gray-400 ml-0.5">ккал</span>
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* CTA */}
             <Link
               href="/scan-food"
-              prefetch={true}
-              className="group px-6 sm:px-8 py-3 sm:py-3.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all text-sm sm:text-base flex items-center justify-center gap-2 hover:scale-105"
+              className="mt-3 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-white text-[11px] font-bold transition-all active:scale-95"
+              style={{
+                background: "linear-gradient(135deg, #10b981, #0891b2)",
+                boxShadow: "0 4px 16px rgba(16,185,129,0.35)",
+              }}
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-              Добавить прием пищи
-            </Link>
-            <Link
-              href="/meal-history"
-              prefetch={true}
-              className="px-6 sm:px-8 py-3 sm:py-3.5 border-2 border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 rounded-xl font-semibold hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-all text-sm sm:text-base hover:scale-105 hover:border-emerald-300 dark:hover:border-emerald-700 flex items-center justify-center gap-2"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-              </svg>
-              Посмотреть историю
+              <Camera className="w-3.5 h-3.5" />
+              Добавить приём
             </Link>
           </div>
+
+          {/* Weight + Goal column */}
+          <div className="space-y-3">
+            {/* Weight card */}
+            <div
+              className="dash-glass dash-enter dash-hover rounded-2xl p-4"
+              style={{ "--enter-delay": "0.18s" } as React.CSSProperties}
+            >
+              <div className="flex items-center justify-between mb-1">
+                <p className="text-[11px] font-medium text-gray-500 dark:text-gray-400">Текущий вес</p>
+                <Activity className="w-3.5 h-3.5 text-gray-300 dark:text-gray-600" />
+              </div>
+              <p className="font-display font-black text-gray-900 dark:text-white leading-none">
+                <span className="text-[28px]">{wStart ? wStart.toFixed(1) : "—"}</span>
+                <span className="text-[13px] font-semibold text-gray-400 ml-1">кг</span>
+              </p>
+
+              {/* Sparkline */}
+              <div className="mt-2.5 overflow-hidden">
+                <svg viewBox="0 0 100 28" className="w-full h-7" preserveAspectRatio="none">
+                  <defs>
+                    <linearGradient id="sparkGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#10b981" stopOpacity="0.3" />
+                      <stop offset="100%" stopColor="#10b981" stopOpacity="0" />
+                    </linearGradient>
+                  </defs>
+                  <path
+                    d="M0,20 C8,20 12,15 22,14 C32,13 36,17 48,13 C60,9 66,8 78,7 C88,6 94,9 100,8"
+                    fill="none" stroke="#10b981" strokeWidth="2" strokeLinecap="round"
+                    style={{ filter: "drop-shadow(0 0 4px rgba(16,185,129,0.5))" }}
+                  />
+                  <path
+                    d="M0,20 C8,20 12,15 22,14 C32,13 36,17 48,13 C60,9 66,8 78,7 C88,6 94,9 100,8 L100,28 L0,28 Z"
+                    fill="url(#sparkGrad)"
+                  />
+                </svg>
+              </div>
+            </div>
+
+            {/* Goal card */}
+            <div
+              className="dash-glass dash-enter dash-hover rounded-2xl p-4"
+              style={{ "--enter-delay": "0.22s" } as React.CSSProperties}
+            >
+              <div className="flex items-center gap-1.5 mb-2">
+                {goalType === "lose" ? (
+                  <TrendingDown className="w-3.5 h-3.5" style={{ color: "#f97316" }} />
+                ) : goalType === "gain" ? (
+                  <TrendingUp className="w-3.5 h-3.5" style={{ color: "#a78bfa" }} />
+                ) : (
+                  <Target className="w-3.5 h-3.5" style={{ color: "#10b981" }} />
+                )}
+                <p
+                  className="text-[9px] font-black uppercase tracking-widest"
+                  style={{
+                    color: goalType === "lose" ? "#f97316" : goalType === "gain" ? "#a78bfa" : "#10b981",
+                  }}
+                >
+                  {goalType === "lose" ? "Похудение" : goalType === "gain" ? "Набор" : "Поддержание"}
+                </p>
+              </div>
+              <p className="font-display font-black text-gray-900 dark:text-white leading-none">
+                <span className="text-[24px]">{Math.abs(wDiff).toFixed(1)}</span>
+                <span className="text-[11px] font-semibold text-gray-400 ml-1">кг</span>
+              </p>
+              <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">
+                Цель: {wGoal.toFixed(1)} кг
+              </p>
+              <div className="mt-2.5 w-full h-1.5 rounded-full bg-gray-100 dark:bg-white/5 overflow-hidden">
+                <div
+                  className="h-full rounded-full dash-bar"
+                  style={{
+                    width: goalType === "maintain" ? "100%" : `${Math.min(100, 60)}%`,
+                    background: goalType === "lose" ? "#f97316" : goalType === "gain" ? "#a78bfa" : "#10b981",
+                    "--bar-delay": "0.6s",
+                  } as React.CSSProperties}
+                />
+              </div>
+              <p className="text-[10px] text-right mt-1"
+                style={{ color: goalType === "lose" ? "#f97316" : goalType === "gain" ? "#a78bfa" : "#10b981" }}>
+                {goalType === "maintain" ? "100%" : ""}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Macros row ───────────────────────────────────────────────── */}
+        <div
+          className="grid grid-cols-3 gap-2 dash-enter"
+          style={{ "--enter-delay": "0.28s" } as React.CSSProperties}
+        >
+          {/* Proteins */}
+          <div className="dash-glass dash-hover rounded-2xl p-3">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-1">
+                <Beef className="w-3.5 h-3.5" style={{ color: "#10b981" }} />
+                <p className="text-[10px] font-semibold text-gray-500 dark:text-gray-400">Белки</p>
+              </div>
+              <p className="text-[9px] font-bold" style={{ color: "#10b981" }}>{proteinPct}%</p>
+            </div>
+            <div className="flex items-baseline gap-0.5 mb-1.5">
+              <span className="text-[20px] font-black font-display text-gray-900 dark:text-white leading-none">
+                {proteins.toFixed(0)}
+              </span>
+              <span className="text-[9px] text-gray-400 dark:text-gray-500 mb-0.5">/{proteinTarget}г</span>
+            </div>
+            <div className="w-full h-1.5 rounded-full bg-gray-100 dark:bg-white/5 overflow-hidden">
+              <div
+                className="h-full rounded-full dash-bar"
+                style={{
+                  width: `${proteinPct}%`,
+                  background: "linear-gradient(90deg, #10b981, #059669)",
+                  boxShadow: "0 0 6px rgba(16,185,129,0.4)",
+                  "--bar-delay": "0.5s",
+                } as React.CSSProperties}
+              />
+            </div>
+          </div>
+
+          {/* Fats */}
+          <div className="dash-glass dash-hover rounded-2xl p-3">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-1">
+                <Droplet className="w-3.5 h-3.5" style={{ color: "#f97316" }} />
+                <p className="text-[10px] font-semibold text-gray-500 dark:text-gray-400">Жиры</p>
+              </div>
+              <p className="text-[9px] font-bold" style={{ color: "#f97316" }}>{fatPct}%</p>
+            </div>
+            <div className="flex items-baseline gap-0.5 mb-1.5">
+              <span className="text-[20px] font-black font-display text-gray-900 dark:text-white leading-none">
+                {fats.toFixed(0)}
+              </span>
+              <span className="text-[9px] text-gray-400 dark:text-gray-500 mb-0.5">/{fatTarget}г</span>
+            </div>
+            <div className="w-full h-1.5 rounded-full bg-gray-100 dark:bg-white/5 overflow-hidden">
+              <div
+                className="h-full rounded-full dash-bar"
+                style={{
+                  width: `${fatPct}%`,
+                  background: "linear-gradient(90deg, #f97316, #ea580c)",
+                  boxShadow: "0 0 6px rgba(249,115,22,0.4)",
+                  "--bar-delay": "0.62s",
+                } as React.CSSProperties}
+              />
+            </div>
+          </div>
+
+          {/* Carbs */}
+          <div className="dash-glass dash-hover rounded-2xl p-3">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-1">
+                <Wheat className="w-3.5 h-3.5" style={{ color: "#8b5cf6" }} />
+                <p className="text-[10px] font-semibold text-gray-500 dark:text-gray-400">Углеводы</p>
+              </div>
+              <p className="text-[9px] font-bold" style={{ color: "#8b5cf6" }}>{carbPct}%</p>
+            </div>
+            <div className="flex items-baseline gap-0.5 mb-1.5">
+              <span className="text-[20px] font-black font-display text-gray-900 dark:text-white leading-none">
+                {carbs.toFixed(0)}
+              </span>
+              <span className="text-[9px] text-gray-400 dark:text-gray-500 mb-0.5">/{carbTarget}г</span>
+            </div>
+            <div className="w-full h-1.5 rounded-full bg-gray-100 dark:bg-white/5 overflow-hidden">
+              <div
+                className="h-full rounded-full dash-bar"
+                style={{
+                  width: `${carbPct}%`,
+                  background: "linear-gradient(90deg, #8b5cf6, #7c3aed)",
+                  boxShadow: "0 0 6px rgba(139,92,246,0.4)",
+                  "--bar-delay": "0.74s",
+                } as React.CSSProperties}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* ── Today's meals ─────────────────────────────────────────────── */}
+        <div
+          className="dash-glass dash-enter rounded-2xl overflow-hidden"
+          style={{ "--enter-delay": "0.35s" } as React.CSSProperties}
+        >
+          <div className="flex items-center justify-between px-4 py-3.5"
+            style={{ borderBottom: "1px solid rgba(0,0,0,0.05)" }}>
+            <div>
+              <p className="text-[13px] font-bold text-gray-900 dark:text-white">
+                Сегодняшние приёмы пищи
+              </p>
+              <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">
+                {recentMeals.length > 0 ? "Последние записи" : "Записей пока нет"}
+              </p>
+            </div>
+            <Link
+              href="/meal-history"
+              className="flex items-center gap-0.5 text-[11px] font-semibold hover:opacity-70 transition-opacity"
+              style={{ color: "#10b981" }}
+            >
+              Вся история <ChevronRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+
+          {recentMeals.length > 0 ? (
+            <div>
+              {recentMeals.map((meal, i) => (
+                <div
+                  key={meal.id}
+                  className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-black/[0.03] dark:hover:bg-white/[0.03]"
+                  style={{
+                    borderBottom: i < recentMeals.length - 1 ? "1px solid rgba(0,0,0,0.04)" : undefined,
+                  }}
+                >
+                  <div className="w-10 h-10 rounded-xl overflow-hidden flex-shrink-0 bg-gray-100 dark:bg-white/5">
+                    <img src={meal.image_url} alt={meal.dish_name || "Meal"} className="w-full h-full object-cover" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[13px] font-semibold text-gray-900 dark:text-white truncate">
+                      {meal.dish_name || "Без названия"}
+                    </p>
+                    <p className="text-[11px] text-gray-400 dark:text-gray-500">
+                      {new Date(meal.created_at).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}
+                    </p>
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    <p className="text-[14px] font-black font-display text-gray-900 dark:text-white">
+                      {meal.calories || 0}
+                    </p>
+                    <p className="text-[10px] text-gray-400 dark:text-gray-500">ккал</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="px-4 py-8 text-center">
+              <div
+                className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-3"
+                style={{ background: "rgba(16,185,129,0.1)" }}
+              >
+                <Camera className="w-6 h-6" style={{ color: "#10b981" }} />
+              </div>
+              <p className="text-[13px] font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                Начните отслеживать питание
+              </p>
+              <p className="text-[11px] text-gray-400 dark:text-gray-500 mb-4">
+                Сфотографируйте еду — AI рассчитает калории
+              </p>
+              <Link
+                href="/scan-food"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-white text-[12px] font-bold"
+                style={{ background: "linear-gradient(135deg, #10b981, #0891b2)" }}
+              >
+                <Camera className="w-3.5 h-3.5" />
+                Сделать первое фото
+              </Link>
+            </div>
+          )}
+        </div>
+
+        {/* ── Plans section ─────────────────────────────────────────────── */}
+        <div
+          className="dash-enter"
+          style={{ "--enter-delay": "0.42s" } as React.CSSProperties}
+        >
+          {/* Header */}
+          <div className="flex items-center justify-between mb-3 px-0.5">
+            <div className="flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5" style={{ color: "#10b981" }} />
+              <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-500">
+                Тарифы
+              </span>
+            </div>
+            <span
+              className="text-[10px] font-bold px-2.5 py-1 rounded-full"
+              style={{ background: "rgba(16,185,129,0.1)", color: "#10b981", border: "1px solid rgba(16,185,129,0.2)" }}
+            >
+              {trialDaysLeft !== null ? `Пробный: ${trialDaysLeft} дн.` : `Сейчас: ${currentPlan}`}
+            </span>
+          </div>
+          <h2 className="text-[20px] font-black font-display text-gray-900 dark:text-white mb-4 px-0.5">
+            Выбери свой{" "}
+            <span style={{ color: "#10b981" }}>план</span>
+          </h2>
+
+          {/* Cards — horizontal scroll */}
+          <div className="flex gap-3 overflow-x-auto pb-2 -mx-3.5 px-3.5 snap-x snap-mandatory scrollbar-none">
+            {PLANS.map((plan) => {
+              const Icon = plan.Icon;
+              const isCurrent = currentPlan?.toUpperCase() === plan.key;
+
+              return (
+                <div
+                  key={plan.key}
+                  className="flex-shrink-0 w-[195px] snap-start rounded-2xl overflow-hidden relative"
+                >
+                  {/* Light bg */}
+                  <div
+                    className="absolute inset-0 dark:hidden rounded-2xl pointer-events-none"
+                    style={{
+                      background:
+                        plan.key === "FREE" ? "rgba(255,255,255,0.9)" :
+                        plan.key === "PREMIUM" ? "linear-gradient(160deg, #f0fdf9, #ecfdf5)" :
+                        "linear-gradient(160deg, #fffbeb, #fef3c7)",
+                      border: `1.5px solid ${plan.key === "FREE" ? "#e5e7eb" : plan.accentBorder}`,
+                    }}
+                  />
+                  {/* Dark bg */}
+                  <div
+                    className="absolute inset-0 hidden dark:block rounded-2xl pointer-events-none"
+                    style={{
+                      background:
+                        plan.key === "FREE" ? "rgba(255,255,255,0.045)" :
+                        plan.key === "PREMIUM" ? "linear-gradient(160deg, rgba(16,185,129,0.07), rgba(16,185,129,0.03))" :
+                        "linear-gradient(160deg, rgba(245,158,11,0.08), rgba(245,158,11,0.03))",
+                      border: `1.5px solid ${plan.key === "FREE" ? "rgba(255,255,255,0.06)" : plan.accentBorder}`,
+                      boxShadow: plan.key !== "FREE" ? `0 0 40px ${plan.accentBg}` : undefined,
+                    }}
+                  />
+
+                  <div className="relative p-4 flex flex-col h-full">
+                    {/* Badge */}
+                    {plan.badge ? (
+                      <div
+                        className="self-start text-[9px] font-black px-2 py-0.5 rounded-full mb-3 tracking-wider"
+                        style={{ background: plan.accentBg, color: plan.accent, border: `1px solid ${plan.accentBorder}` }}
+                      >
+                        {plan.badge}
+                      </div>
+                    ) : (
+                      <div className="h-5 mb-3" />
+                    )}
+
+                    {/* Icon + name */}
+                    <div className="flex items-center gap-2 mb-2">
+                      <div
+                        className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
+                        style={{ background: plan.accentBg }}
+                      >
+                        <Icon className="w-4 h-4" style={{ color: plan.accent }} />
+                      </div>
+                      <p className="text-[14px] font-black font-display text-gray-900 dark:text-white">
+                        {plan.name}
+                      </p>
+                    </div>
+
+                    {/* Price */}
+                    <div className="mb-3">
+                      {plan.price ? (
+                        <div className="flex items-baseline gap-0.5">
+                          <span className="text-[22px] font-black font-display text-gray-900 dark:text-white leading-none">
+                            {plan.price}
+                          </span>
+                          <span className="text-[10px] text-gray-400 dark:text-gray-500 ml-1">сом/мес</span>
+                        </div>
+                      ) : (
+                        <p className="text-[16px] font-black text-gray-500 dark:text-gray-400">0 сом</p>
+                      )}
+                    </div>
+
+                    {/* Features */}
+                    <div className="space-y-1.5 mb-4 flex-1">
+                      {plan.features.map((f) => (
+                        <div key={f} className="flex items-start gap-1.5">
+                          {f.startsWith("Без") ? (
+                            <div className="w-3.5 h-3.5 rounded-full bg-gray-100 dark:bg-white/5 flex items-center justify-center flex-shrink-0 mt-0.5">
+                              <div className="w-1.5 h-0.5 bg-gray-400 rounded-full" />
+                            </div>
+                          ) : (
+                            <div
+                              className="w-3.5 h-3.5 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5"
+                              style={{ background: plan.accentBg }}
+                            >
+                              <Check className="w-2.5 h-2.5" style={{ color: plan.accent }} strokeWidth={3} />
+                            </div>
+                          )}
+                          <p className="text-[11px] text-gray-600 dark:text-gray-400 leading-tight">{f}</p>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* CTA */}
+                    <Link
+                      href={`/subscription?plan=${plan.key.toLowerCase()}`}
+                      className="w-full py-2.5 rounded-xl text-[11px] font-black text-center transition-all active:scale-95 hover:opacity-90"
+                      style={
+                        isCurrent
+                          ? { background: "transparent", color: "#9ca3af", border: "1.5px solid rgba(156,163,175,0.3)" }
+                          : plan.btnStyle === "green"
+                            ? { background: "linear-gradient(135deg, #10b981, #0891b2)", color: "#fff", boxShadow: "0 4px 14px rgba(16,185,129,0.4)" }
+                            : plan.btnStyle === "amber"
+                              ? { background: "linear-gradient(135deg, #f59e0b, #d97706)", color: "#fff", boxShadow: "0 4px 14px rgba(245,158,11,0.4)" }
+                              : { background: "transparent", color: "#6b7280", border: "1.5px solid rgba(156,163,175,0.3)" }
+                      }
+                    >
+                      {isCurrent ? "Текущий план" : plan.key === "PREMIUM" ? "Перейти на Pro →" : plan.key === "PRO" ? "Получить Premium →" : "Начать бесплатно"}
+                    </Link>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <p className="text-center text-[10px] text-gray-400 dark:text-gray-600 mt-3">
+            Безопасная оплата · Отмена в любое время
+          </p>
         </div>
       </main>
+
+      {/* ── Fixed bottom nav ────────────────────────────────────────────── */}
+      <nav
+        className="fixed bottom-0 left-0 right-0 z-40"
+        style={{
+          background: "rgba(240,242,248,0.92)",
+          borderTop: "1px solid rgba(0,0,0,0.06)",
+          backdropFilter: "blur(28px)",
+          WebkitBackdropFilter: "blur(28px)",
+        }}
+      >
+        <div
+          className="absolute inset-0 hidden dark:block pointer-events-none"
+          style={{
+            background: "rgba(8,11,20,0.9)",
+            borderTop: "1px solid rgba(255,255,255,0.055)",
+          }}
+        />
+        <div className="max-w-lg mx-auto px-3 py-2.5 grid grid-cols-2 gap-2.5 relative">
+          <Link
+            href="/scan-food"
+            className="flex items-center gap-3 p-3 rounded-2xl transition-all active:scale-95 hover:opacity-90"
+            style={{
+              background: "linear-gradient(135deg, #10b981, #0891b2)",
+              boxShadow: "0 4px 18px rgba(16,185,129,0.3)",
+            }}
+          >
+            <div className="w-9 h-9 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0">
+              <Camera className="w-5 h-5 text-white" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-[12px] font-bold text-white leading-tight">Сканировать еду</p>
+              <p className="text-[10px] text-white/65 truncate">
+                {snapsCount > 0
+                  ? `${snapsCount} ${snapsCount === 1 ? "снап" : snapsCount <= 4 ? "снапа" : "снапов"} сегодня`
+                  : "AI анализ за секунды"}
+              </p>
+            </div>
+          </Link>
+
+          <Link
+            href="/meal-history"
+            className="flex items-center gap-3 p-3 rounded-2xl transition-all active:scale-95 hover:opacity-90 border"
+            style={{
+              background: "rgba(99,102,241,0.07)",
+              borderColor: "rgba(99,102,241,0.15)",
+            }}
+          >
+            <div
+              className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+              style={{ background: "rgba(99,102,241,0.15)" }}
+            >
+              <History className="w-5 h-5" style={{ color: "#818cf8" }} />
+            </div>
+            <div className="min-w-0">
+              <p className="text-[12px] font-bold text-gray-900 dark:text-white leading-tight">История питания</p>
+              <p className="text-[10px] text-gray-400 dark:text-gray-500 truncate">Все записи и статистика</p>
+            </div>
+          </Link>
+        </div>
+      </nav>
     </div>
   );
 }

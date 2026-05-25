@@ -57,14 +57,8 @@ export function ImageViewerModal({ isOpen, onClose, imageUrl, userName }: ImageV
       className="fixed top-0 left-0 right-0 bottom-0 z-[99999] animate-in fade-in duration-200" 
       style={{ position: 'fixed', inset: 0, width: '100vw', height: '100vh' }}
     >
-      {/* Blurred Background */}
-      <div className="absolute inset-0 bg-black/95" style={{ position: 'absolute', inset: 0 }}>
-        <img
-          src={imageUrl}
-          alt=""
-          className="w-full h-full object-cover blur-3xl scale-110 opacity-20"
-        />
-      </div>
+      {/* Прозрачный фон с лёгким затемнением */}
+      <div className="absolute inset-0 bg-black/30 backdrop-blur-md" style={{ position: 'absolute', inset: 0 }} />
 
       {/* Clickable backdrop */}
       <div 
@@ -83,27 +77,26 @@ export function ImageViewerModal({ isOpen, onClose, imageUrl, userName }: ImageV
         <X className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
       </button>
 
-      {/* Centered Image - Full screen with aspect ratio preserved */}
+      {/* Centered Image - Fixed size container, image fills it */}
       <div 
-        className="absolute inset-0 flex items-center justify-center z-10" 
+        className="absolute inset-0 flex items-center justify-center z-10 p-4" 
         style={{ position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
       >
-        <img
-          src={imageUrl}
-          alt={userName}
-          className="max-w-full max-h-full w-auto h-auto object-contain"
-          style={{ 
-            maxWidth: '100%', 
-            maxHeight: '100%',
-            minWidth: 'min(600px, 90vw)',
-            minHeight: 'min(600px, 90vh)'
-          }}
-          draggable={false}
+        <div
+          className="relative w-full max-w-[700px] aspect-square rounded-2xl overflow-hidden shadow-2xl bg-black/40"
           onClick={(e) => e.stopPropagation()}
-        />
+          style={{ maxHeight: '85vh' }}
+        >
+          <img
+            src={imageUrl}
+            alt={userName}
+            className="w-full h-full object-cover"
+            draggable={false}
+          />
+        </div>
       </div>
 
-      {/* Bottom Hint - positioned absolutely at bottom */}
+      {/* Bottom Hint */}
       <div 
         className="absolute bottom-8 sm:bottom-10 left-0 right-0 z-20 flex justify-center px-4"
         style={{ position: 'fixed', bottom: '2rem', left: 0, right: 0 }}

@@ -1,3 +1,4 @@
 {
-    "typescript.autoClosingTags": false
+    "js/ts.autoClosingTags.enabled": false,
+    "css.lint.unknownAtRules": "ignore"
 }

@@ -44,6 +44,7 @@ export async function POST(request: NextRequest) {
 
     const plan = await prisma.subscription_plans.create({
       data: {
+        id: crypto.randomUUID(),
         plan_type: data.planType,
         name_ru: data.nameRu,
         name_en: data.nameEn,
@@ -61,6 +62,7 @@ export async function POST(request: NextRequest) {
         has_priority_support: data.hasPrioritySupport,
         is_active: data.isActive,
         sort_order: data.sortOrder,
+        updated_at: new Date(),
       },
     });
 

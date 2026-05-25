@@ -2,7 +2,7 @@
 
 import { useState, useRef, KeyboardEvent, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Mail, Lock, Loader2, CheckCircle } from 'lucide-react';
+import { Mail, Lock, Loader2, CheckCircle, Eye, EyeOff } from 'lucide-react';
 import { getPasswordRequirements } from '@/lib/auth/password-validation';
 
 interface ForgotPasswordFormProps {
@@ -21,6 +21,8 @@ export function ForgotPasswordForm({ initialEmail = '' }: ForgotPasswordFormProp
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPasswordRequirements, setShowPasswordRequirements] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   // Проверка требований к паролю
@@ -289,7 +291,9 @@ export function ForgotPasswordForm({ initialEmail = '' }: ForgotPasswordFormProp
             {code.map((digit, index) => (
               <input
                 key={index}
-                ref={(el) => (inputRefs.current[index] = el)}
+                ref={(el) => {
+                  inputRefs.current[index] = el;
+                }}
                 type="text"
                 inputMode="numeric"
                 maxLength={1}
@@ -376,16 +380,28 @@ export function ForgotPasswordForm({ initialEmail = '' }: ForgotPasswordFormProp
           <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
           <input
             id="newPassword"
-            type="password"
+            type={showNewPassword ? 'text' : 'password'}
             required
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
             onFocus={() => setShowPasswordRequirements(true)}
-            className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+            className="w-full pl-10 pr-12 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
             placeholder="Минимум 8 символов, буквы, цифры, спецсимволы"
             minLength={8}
             autoFocus
           />
+          <button
+            type="button"
+            onClick={() => setShowNewPassword(!showNewPassword)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+            tabIndex={-1}
+          >
+            {showNewPassword ? (
+              <EyeOff className="w-5 h-5" />
+            ) : (
+              <Eye className="w-5 h-5" />
+            )}
+          </button>
         </div>
         
         {/* Индикатор требований к паролю */}
@@ -426,14 +442,26 @@ export function ForgotPasswordForm({ initialEmail = '' }: ForgotPasswordFormProp
           <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
           <input
             id="confirmPassword"
-            type="password"
+            type={showConfirmPassword ? 'text' : 'password'}
             required
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
-            className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+            className="w-full pl-10 pr-12 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
             placeholder="Повторите пароль"
             minLength={8}
           />
+          <button
+            type="button"
+            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+            tabIndex={-1}
+          >
+            {showConfirmPassword ? (
+              <EyeOff className="w-5 h-5" />
+            ) : (
+              <Eye className="w-5 h-5" />
+            )}
+          </button>
         </div>
       </div>
 

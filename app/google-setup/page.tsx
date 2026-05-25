@@ -1,9 +1,18 @@
+'use client';
+
+import { ThemeToggle } from '@/app/components/ThemeToggle';
+
 export default function GoogleSetupPage() {
   const redirectUri = 'http://localhost:3000/api/auth/google/callback';
   const consoleUrl = 'https://console.cloud.google.com/apis/credentials';
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-12 px-4">
+      {/* Theme Toggle - Fixed Position */}
+      <div className="fixed top-4 right-4 z-50">
+        <ThemeToggle />
+      </div>
+
       <div className="max-w-3xl mx-auto">
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-6">

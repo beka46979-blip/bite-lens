@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import { verifyPassword } from '@/lib/auth/password';
-import { signJWT } from '@/lib/auth/jwt';
-import { setAuthCookies } from '@/lib/auth/cookies';
-import { z } from 'zod';
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { verifyPassword } from "@/lib/auth/password";
+import { signJWT } from "@/lib/auth/jwt";
+import { setAuthCookies } from "@/lib/auth/cookies";
+import { z } from "zod";
 
 const loginSchema = z.object({
   email: z.string().email(),
@@ -22,24 +22,21 @@ export async function POST(request: NextRequest) {
 
     if (!user) {
       return NextResponse.json(
-        { error: 'invalidCredentials' },
-        { status: 401 }
+        { error: "invalidCredentials" },
+        { status: 401 },
       );
     }
 
     // Проверка: если пользователь зарегистрирован через Google
     if (user.google_id && !user.password_hash) {
-      return NextResponse.json(
-        { error: 'googleAccount' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "googleAccount" }, { status: 400 });
     }
 
     // Проверка пароля
     if (!user.password_hash) {
       return NextResponse.json(
-        { error: 'invalidCredentials' },
-        { status: 401 }
+        { error: "invalidCredentials" },
+        { status: 401 },
       );
     }
 
@@ -47,14 +44,28 @@ export async function POST(request: NextRequest) {
 
     if (!isValidPassword) {
       return NextResponse.json(
-        { error: 'invalidCredentials' },
-        { status: 401 }
+        { error: "invalidCredentials" },
+        { status: 401 },
       );
     }
 
     // Создание токенов
-    const token = await signJWT({ userId: user.id, email: user.email }, '7d');
-    const refreshToken = await signJWT({ userId: user.id, email: user.email }, '30d');
+    const token = await signJWT(
+      {
+        userId: user.id,
+        email: user.email,
+        isEmailVerified: user.is_email_verified ?? false,
+      },
+      "7d",
+    );
+    const refreshToken = await signJWT(
+      {
+        userId: user.id,
+        email: user.email,
+        isEmailVerified: user.is_email_verified ?? false,
+      },
+      "30d",
+    );
 
     // Сохранение refresh token в БД
     await prisma.sessions.create({
@@ -62,8 +73,11 @@ export async function POST(request: NextRequest) {
         id: crypto.randomUUID(),
         user_id: user.id,
         refresh_token: refreshToken,
-        user_agent: request.headers.get('user-agent') || undefined,
-        ip_address: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined,
+        user_agent: request.headers.get("user-agent") || undefined,
+        ip_address:
+          request.headers.get("x-forwarded-for") ||
+          request.headers.get("x-real-ip") ||
+          undefined,
         expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
       },
     });
@@ -87,15 +101,12 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: 'validation', details: error.errors },
-        { status: 400 }
+        { error: "validation", details: error.issues },
+        { status: 400 },
       );
     }
 
-    console.error('Login error:', error);
-    return NextResponse.json(
-      { error: 'serverError' },
-      { status: 500 }
-    );
+    console.error("Login error:", error);
+    return NextResponse.json({ error: "serverError" }, { status: 500 });
   }
 }

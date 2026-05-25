@@ -273,7 +273,7 @@ model users {
   updated_at              DateTime                  @default(now()) @updatedAt @db.Timestamp(6)
   name                    String?                   @db.VarChar(255)
   google_id               String?                   @unique @db.VarChar(255)
-  avatar                  String?
+  avatar                  String?                   @db.Text
   email_verification_code String?                   @db.VarChar(255)
   password_reset_token    String?                   @db.VarChar(255)
   two_factor_enabled      Boolean                   @default(false)

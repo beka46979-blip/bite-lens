@@ -15,7 +15,7 @@ export default async function AdminLayout({
 
   // Если авторизован, показываем с сайдбаром
   return (
-    <div className="min-h-screen bg-gray-50" style={{ overscrollBehavior: 'none', touchAction: 'pan-y' }}>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950" style={{ overscrollBehavior: 'none', touchAction: 'pan-y' }}>
       <AdminSidebar adminEmail={admin.email} />
       
       {/* Main Content */}

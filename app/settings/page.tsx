@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma';
 import Link from 'next/link';
 import { ArrowLeft, Shield, Smartphone } from 'lucide-react';
 import { TwoFactorSettings } from './TwoFactorSettings';
+import { ThemeToggle } from '@/app/components/ThemeToggle';
 
 export default async function SettingsPage() {
   const currentUser = await getCurrentUser();
@@ -30,7 +31,7 @@ export default async function SettingsPage() {
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800 py-12 px-4">
       <div className="max-w-3xl mx-auto">
         {/* Header */}
-        <div className="mb-6">
+        <div className="mb-6 flex items-center justify-between">
           <Link
             href="/profile"
             className="inline-flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
@@ -38,6 +39,7 @@ export default async function SettingsPage() {
             <ArrowLeft className="w-4 h-4" />
             Назад к профилю
           </Link>
+          <ThemeToggle />
         </div>
 
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8">

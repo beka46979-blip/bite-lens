@@ -66,7 +66,7 @@ export async function PATCH(
     const body = await request.json();
 
     // Валидация: нельзя изменить свою роль
-    if (id === admin.id && body.role) {
+    if (id === admin.adminId && body.role) {
       return NextResponse.json(
         { error: 'Cannot change your own role' },
         { status: 400 }
@@ -123,7 +123,7 @@ export async function DELETE(
     const { id } = await params;
 
     // Валидация: нельзя удалить себя
-    if (id === admin.id) {
+    if (id === admin.adminId) {
       return NextResponse.json(
         { error: 'Cannot delete yourself' },
         { status: 400 }

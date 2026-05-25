@@ -1,7 +1,7 @@
-import { SignJWT, jwtVerify } from 'jose';
+import { SignJWT, jwtVerify } from "jose";
 
 const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || 'your-secret-key-change-in-production'
+  process.env.JWT_SECRET || "your-secret-key-change-in-production",
 );
 
 export interface JWTPayload {
@@ -9,16 +9,20 @@ export interface JWTPayload {
   email: string;
   role?: string;
   isAdmin?: boolean;
+  isEmailVerified?: boolean;
   iat?: number;
   exp?: number;
 }
 
-export async function signJWT(payload: JWTPayload, expiresIn: string = '7d'): Promise<string> {
+export async function signJWT(
+  payload: JWTPayload,
+  expiresIn: string = "7d",
+): Promise<string> {
   const iat = Math.floor(Date.now() / 1000);
   const exp = iat + parseExpiration(expiresIn);
 
   return new SignJWT({ ...payload })
-    .setProtectedHeader({ alg: 'HS256', typ: 'JWT' })
+    .setProtectedHeader({ alg: "HS256", typ: "JWT" })
     .setExpirationTime(exp)
     .setIssuedAt(iat)
     .setNotBefore(iat)
@@ -28,7 +32,15 @@ export async function signJWT(payload: JWTPayload, expiresIn: string = '7d'): Pr
 export async function verifyJWT(token: string): Promise<JWTPayload | null> {
   try {
     const { payload } = await jwtVerify(token, JWT_SECRET);
-    return payload as JWTPayload;
+    return {
+      userId: payload.userId as string,
+      email: payload.email as string,
+      role: payload.role as string | undefined,
+      isAdmin: payload.isAdmin as boolean | undefined,
+      isEmailVerified: payload.isEmailVerified as boolean | undefined,
+      iat: payload.iat,
+      exp: payload.exp,
+    };
   } catch (error) {
     return null;
   }
@@ -39,10 +51,15 @@ function parseExpiration(expiresIn: string): number {
   const value = parseInt(expiresIn.slice(0, -1));
 
   switch (unit) {
-    case 's': return value;
-    case 'm': return value * 60;
-    case 'h': return value * 60 * 60;
-    case 'd': return value * 60 * 60 * 24;
-    default: return 60 * 60 * 24 * 7; // 7 days default
+    case "s":
+      return value;
+    case "m":
+      return value * 60;
+    case "h":
+      return value * 60 * 60;
+    case "d":
+      return value * 60 * 60 * 24;
+    default:
+      return 60 * 60 * 24 * 7; // 7 days default
   }
 }

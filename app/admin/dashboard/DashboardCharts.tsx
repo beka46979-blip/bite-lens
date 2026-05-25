@@ -18,178 +18,170 @@ interface Props {
 }
 
 export function DashboardCharts({ registrations, revenue }: Props) {
-  console.log('DashboardCharts received registrations:', registrations);
-  console.log('DashboardCharts received revenue:', revenue);
-  
-  // Функция для создания точек линии графика
+  // Линия графика
   const createLinePath = (data: number[], maxValue: number, width: number, height: number) => {
     if (data.length === 0) return '';
-    
     const stepX = width / (data.length - 1 || 1);
     const points = data.map((value, index) => {
       const x = index * stepX;
       const y = height - (value / maxValue) * height;
       return `${x},${y}`;
     });
-    
     return `M ${points.join(' L ')}`;
   };
 
-  // Функция для создания области под графиком
+  // Область под графиком
   const createAreaPath = (data: number[], maxValue: number, width: number, height: number) => {
     if (data.length === 0) return '';
-    
     const stepX = width / (data.length - 1 || 1);
     const points = data.map((value, index) => {
       const x = index * stepX;
       const y = height - (value / maxValue) * height;
       return `${x},${y}`;
     });
-    
     return `M 0,${height} L ${points.join(' L ')} L ${width},${height} Z`;
   };
 
-  // Данные для графика регистраций
-  const registrationCounts = registrations.map(r => r.count);
+  const registrationCounts = registrations.map((r) => r.count);
   const maxRegistrations = Math.max(...registrationCounts, 1);
-  
-  // Данные для графика дохода
-  const revenueAmounts = revenue.map(r => r.amount);
+
+  const revenueAmounts = revenue.map((r) => r.amount);
   const maxRevenue = Math.max(...revenueAmounts, 1);
 
+  const totalRegistrations = registrationCounts.reduce((a, b) => a + b, 0);
+  const totalRevenue = revenueAmounts.reduce((a, b) => a + b, 0);
+
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       {/* График регистраций */}
-      <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
+      <div className="bg-white dark:bg-gray-900 rounded-xl p-5 sm:p-6 border border-gray-200 dark:border-gray-800">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-              <Users className="w-5 h-5 text-green-600" />
+            <div className="w-10 h-10 bg-blue-50 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
+              <Users className="w-5 h-5 text-blue-600 dark:text-blue-400" />
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-gray-900">Регистрации</h3>
-              <p className="text-sm text-gray-500">Последние 7 дней</p>
+              <h3 className="text-base font-semibold text-gray-900 dark:text-white">
+                Регистрации
+              </h3>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Последние 7 дней</p>
             </div>
           </div>
-          <div className="flex items-center gap-1 text-green-600">
-            <TrendingUp className="w-4 h-4" />
-            <span className="text-sm font-semibold">
-              {registrationCounts.reduce((a, b) => a + b, 0)} всего
+          <div className="flex items-center gap-1 px-2.5 py-1 bg-emerald-50 dark:bg-emerald-900/30 rounded-md">
+            <TrendingUp className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+            <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+              {totalRegistrations}
             </span>
           </div>
         </div>
 
         {/* График */}
-        <div className="relative h-48">
+        <div className="relative h-48 -mx-2">
           <svg className="w-full h-full" viewBox="0 0 400 180" preserveAspectRatio="none">
             {/* Сетка */}
-            <line x1="0" y1="0" x2="400" y2="0" stroke="#e5e7eb" strokeWidth="1" />
-            <line x1="0" y1="45" x2="400" y2="45" stroke="#e5e7eb" strokeWidth="1" />
-            <line x1="0" y1="90" x2="400" y2="90" stroke="#e5e7eb" strokeWidth="1" />
-            <line x1="0" y1="135" x2="400" y2="135" stroke="#e5e7eb" strokeWidth="1" />
-            <line x1="0" y1="180" x2="400" y2="180" stroke="#e5e7eb" strokeWidth="1" />
+            <line x1="0" y1="45" x2="400" y2="45" className="stroke-gray-100 dark:stroke-gray-800" strokeWidth="1" strokeDasharray="4" />
+            <line x1="0" y1="90" x2="400" y2="90" className="stroke-gray-100 dark:stroke-gray-800" strokeWidth="1" strokeDasharray="4" />
+            <line x1="0" y1="135" x2="400" y2="135" className="stroke-gray-100 dark:stroke-gray-800" strokeWidth="1" strokeDasharray="4" />
 
             {/* Область под графиком */}
             <path
               d={createAreaPath(registrationCounts, maxRegistrations, 400, 180)}
               fill="url(#registrationGradient)"
-              opacity="0.3"
             />
 
             {/* Линия графика */}
             <path
               d={createLinePath(registrationCounts, maxRegistrations, 400, 180)}
               fill="none"
-              stroke="#10b981"
-              strokeWidth="3"
+              stroke="#3b82f6"
+              strokeWidth="2.5"
               strokeLinecap="round"
               strokeLinejoin="round"
             />
 
-            {/* Точки на графике */}
+            {/* Точки */}
             {registrationCounts.map((value, index) => {
               const x = (index * 400) / (registrationCounts.length - 1 || 1);
               const y = 180 - (value / maxRegistrations) * 180;
               return (
                 <g key={index}>
+                  <circle cx={x} cy={y} r="6" fill="#3b82f6" opacity="0.2" />
                   <circle
                     cx={x}
                     cy={y}
-                    r="5"
-                    fill="white"
-                    stroke="#10b981"
+                    r="4"
+                    fill="#3b82f6"
+                    className="stroke-white dark:stroke-gray-900"
                     strokeWidth="2"
-                  />
-                  <circle
-                    cx={x}
-                    cy={y}
-                    r="3"
-                    fill="#10b981"
                   />
                 </g>
               );
             })}
 
-            {/* Градиент */}
             <defs>
               <linearGradient id="registrationGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" stopColor="#10b981" stopOpacity="0.8" />
-                <stop offset="100%" stopColor="#10b981" stopOpacity="0" />
+                <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.25" />
+                <stop offset="100%" stopColor="#3b82f6" stopOpacity="0" />
               </linearGradient>
             </defs>
           </svg>
         </div>
 
-        {/* Легенда */}
-        <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
+        {/* Дни */}
+        <div className="grid grid-cols-7 gap-1 mt-4 pt-4 border-t border-gray-100 dark:border-gray-800">
           {registrations.map((item, index) => (
             <div key={index} className="text-center">
-              <p className="text-xs text-gray-500 mb-1">
-                {new Date(item.date).toLocaleDateString('ru', { day: 'numeric', month: 'short' })}
+              <p className="text-[10px] text-gray-500 dark:text-gray-400 mb-1 uppercase">
+                {new Date(item.date).toLocaleDateString('ru', { weekday: 'short' })}
               </p>
-              <p className="text-sm font-semibold text-gray-900">{item.count}</p>
+              <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                {item.count}
+              </p>
             </div>
           ))}
         </div>
       </div>
 
       {/* График дохода */}
-      <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
+      <div className="bg-white dark:bg-gray-900 rounded-xl p-5 sm:p-6 border border-gray-200 dark:border-gray-800">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center">
-              <DollarSign className="w-5 h-5 text-emerald-600" />
+            <div className="w-10 h-10 bg-emerald-50 dark:bg-emerald-900/30 rounded-lg flex items-center justify-center">
+              <DollarSign className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-gray-900">Доход</h3>
-              <p className="text-sm text-gray-500">Последние 7 дней</p>
+              <h3 className="text-base font-semibold text-gray-900 dark:text-white">
+                Доход
+              </h3>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Последние 7 дней</p>
             </div>
           </div>
-          <div className="flex items-center gap-1 text-emerald-600">
-            <TrendingUp className="w-4 h-4" />
-            <span className="text-sm font-semibold">
-              ${revenueAmounts.reduce((a, b) => a + b, 0).toFixed(2)}
+          <div className="flex items-center gap-1 px-2.5 py-1 bg-emerald-50 dark:bg-emerald-900/30 rounded-md">
+            <TrendingUp className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+            <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+              ${totalRevenue}
             </span>
           </div>
         </div>
 
-        {/* График */}
-        <div className="relative h-48">
+        {/* График - bars */}
+        <div className="relative h-48 -mx-2">
           <svg className="w-full h-full" viewBox="0 0 400 180" preserveAspectRatio="none">
             {/* Сетка */}
-            <line x1="0" y1="0" x2="400" y2="0" stroke="#e5e7eb" strokeWidth="1" />
-            <line x1="0" y1="45" x2="400" y2="45" stroke="#e5e7eb" strokeWidth="1" />
-            <line x1="0" y1="90" x2="400" y2="90" stroke="#e5e7eb" strokeWidth="1" />
-            <line x1="0" y1="135" x2="400" y2="135" stroke="#e5e7eb" strokeWidth="1" />
-            <line x1="0" y1="180" x2="400" y2="180" stroke="#e5e7eb" strokeWidth="1" />
+            <line x1="0" y1="45" x2="400" y2="45" className="stroke-gray-100 dark:stroke-gray-800" strokeWidth="1" strokeDasharray="4" />
+            <line x1="0" y1="90" x2="400" y2="90" className="stroke-gray-100 dark:stroke-gray-800" strokeWidth="1" strokeDasharray="4" />
+            <line x1="0" y1="135" x2="400" y2="135" className="stroke-gray-100 dark:stroke-gray-800" strokeWidth="1" strokeDasharray="4" />
 
             {/* Столбцы */}
             {revenueAmounts.map((value, index) => {
-              const barWidth = 400 / revenueAmounts.length - 10;
-              const x = (index * 400) / revenueAmounts.length + 5;
-              const height = (value / maxRevenue) * 180;
+              const totalBars = revenueAmounts.length;
+              const gap = 8;
+              const totalGap = gap * (totalBars - 1);
+              const barWidth = (400 - totalGap) / totalBars;
+              const x = index * (barWidth + gap);
+              const height = (value / maxRevenue) * 170;
               const y = 180 - height;
-              
+
               return (
                 <g key={index}>
                   <rect
@@ -198,30 +190,31 @@ export function DashboardCharts({ registrations, revenue }: Props) {
                     width={barWidth}
                     height={height}
                     fill="url(#revenueGradient)"
-                    rx="4"
+                    rx="6"
                   />
                 </g>
               );
             })}
 
-            {/* Градиент */}
             <defs>
               <linearGradient id="revenueGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" stopColor="#10b981" stopOpacity="0.9" />
-                <stop offset="100%" stopColor="#059669" stopOpacity="0.7" />
+                <stop offset="0%" stopColor="#10b981" stopOpacity="1" />
+                <stop offset="100%" stopColor="#10b981" stopOpacity="0.4" />
               </linearGradient>
             </defs>
           </svg>
         </div>
 
-        {/* Легенда */}
-        <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
+        {/* Дни */}
+        <div className="grid grid-cols-7 gap-1 mt-4 pt-4 border-t border-gray-100 dark:border-gray-800">
           {revenue.map((item, index) => (
             <div key={index} className="text-center">
-              <p className="text-xs text-gray-500 mb-1">
-                {new Date(item.date).toLocaleDateString('ru', { day: 'numeric', month: 'short' })}
+              <p className="text-[10px] text-gray-500 dark:text-gray-400 mb-1 uppercase">
+                {new Date(item.date).toLocaleDateString('ru', { weekday: 'short' })}
               </p>
-              <p className="text-sm font-semibold text-gray-900">${item.amount}</p>
+              <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                ${item.amount}
+              </p>
             </div>
           ))}
         </div>

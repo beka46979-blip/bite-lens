@@ -22,6 +22,7 @@ export function ProfileHeader({ initialAvatar, userName, userEmail }: ProfileHea
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Закрытие меню при клике вне его
   useEffect(() => {
@@ -68,61 +69,84 @@ export function ProfileHeader({ initialAvatar, userName, userEmail }: ProfileHea
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
-      alert('Пожалуйста, выберите изображение');
+      setErrorMessage('Пожалуйста, выберите изображение');
       return;
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      alert('Размер файла не должен превышать 5MB');
+      setErrorMessage('Размер файла не должен превышать 5MB');
       return;
     }
 
     setIsUploading(true);
+    setErrorMessage(null);
 
     try {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
+      // Используем FormData (multipart/form-data) — API ожидает именно это
+      const formData = new FormData();
+      formData.append('avatar', file);
 
-      reader.onloadend = async () => {
-        const base64Image = reader.result as string;
+      const response = await fetch('/api/profile/avatar', {
+        method: 'POST',
+        body: formData,
+        // Не указываем Content-Type — браузер сам установит multipart/form-data с boundary
+      });
 
-        const response = await fetch('/api/profile/avatar', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ avatar: base64Image }),
-        });
+      const data = await response.json();
 
-        if (response.ok) {
-          setAvatar(base64Image);
-          router.refresh();
-        } else {
-          alert('Ошибка при загрузке фото');
-        }
-      };
+      if (response.ok) {
+        // Сервер возвращает URL из S3, а не base64
+        setAvatar(data.user?.avatar || null);
+        router.refresh();
+      } else {
+        console.error('Upload avatar error:', data);
+        setErrorMessage(data.details || data.error || 'Ошибка при загрузке фото');
+      }
     } catch (error) {
-      alert('Ошибка при загрузке фото');
+      console.error('Upload avatar exception:', error);
+      setErrorMessage('Ошибка при загрузке фото');
     } finally {
       setIsUploading(false);
+      // Сбрасываем input, чтобы можно было выбрать тот же файл повторно
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
   };
 
   const handleDeleteAvatar = async () => {
     setIsDeleting(true);
+    setErrorMessage(null);
 
     try {
       const response = await fetch('/api/profile/avatar', {
         method: 'DELETE',
       });
 
+      const data = await response.json();
+
       if (response.ok) {
         setAvatar(null);
         setShowDeleteConfirm(false);
         router.refresh();
       } else {
-        alert('Не удалось удалить фото');
+        console.error('Delete avatar error:', data);
+        setShowDeleteConfirm(false);
+        
+        // Показываем детали ошибки валидации
+        if (data.error === 'validation' && data.details) {
+          const errorDetails = data.details.map((err: any) => 
+            `${err.path.join('.')}: ${err.message}`
+          ).join(', ');
+          setErrorMessage(`Ошибка валидации: ${errorDetails}`);
+        } else {
+          setErrorMessage(data.details || data.error || 'Не удалось удалить фото');
+        }
       }
     } catch (error) {
-      alert('Произошла ошибка при удалении фото');
+      console.error('Delete avatar exception:', error);
+      setShowDeleteConfirm(false);
+      setErrorMessage('Произошла ошибка при удалении фото');
     } finally {
       setIsDeleting(false);
     }
@@ -130,6 +154,17 @@ export function ProfileHeader({ initialAvatar, userName, userEmail }: ProfileHea
 
   return (
     <>
+      {/* Error Modal */}
+      {errorMessage && (
+        <Modal
+          isOpen={true}
+          onClose={() => setErrorMessage(null)}
+          type="error"
+          title="Ошибка сохранения"
+          message={errorMessage}
+        />
+      )}
+
       {/* Delete Confirmation Modal */}
       <Modal
         isOpen={showDeleteConfirm}
