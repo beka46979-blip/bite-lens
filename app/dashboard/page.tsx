@@ -70,10 +70,10 @@ const PLANS = [
     price: 890,
     priceLabel: "890 сом",
     badge: "ЛУЧШИЙ",
-    accent: "#f59e0b",
-    accentBg: "rgba(245,158,11,0.1)",
-    accentBorder: "rgba(245,158,11,0.35)",
-    btnStyle: "amber" as const,
+    accent: "#a78bfa",
+    accentBg: "rgba(167,139,250,0.1)",
+    accentBorder: "rgba(167,139,250,0.35)",
+    btnStyle: "purple" as const,
     features: ["Всё из Pro", "AI-тренер 24/7", "Рецепты под план", "Приоритетная поддержка", "Ранний доступ"],
   },
 ];
@@ -818,28 +818,18 @@ export default async function DashboardPage() {
               const Icon = plan.Icon;
               const isCurrent = currentPlan?.toUpperCase() === plan.key;
 
-              const bgStyle =
-                plan.key === "FREE"
-                  ? "rgba(255,255,255,0.03)"
-                  : plan.key === "PREMIUM"
-                    ? "linear-gradient(180deg, rgba(0,208,132,0.06), rgba(0,208,132,0.01))"
-                    : "linear-gradient(180deg, rgba(245,158,11,0.07), rgba(245,158,11,0.02))";
-
-              const borderStyle =
-                plan.key === "FREE"
-                  ? "rgba(255,255,255,0.06)"
-                  : plan.key === "PREMIUM"
-                    ? "rgba(0,208,132,0.25)"
-                    : "rgba(245,158,11,0.25)";
-
               return (
                 <div
                   key={plan.key}
-                  className="rounded-3xl overflow-hidden relative flex flex-col"
+                  className={`rounded-3xl overflow-hidden relative flex flex-col border transition-all ${
+                    plan.key === "FREE"
+                      ? "bg-gradient-to-br from-gray-100 to-gray-200 dark:from-transparent dark:to-transparent dark:bg-white/[0.03] border-gray-300 dark:border-white/[0.06]"
+                      : plan.key === "PREMIUM"
+                        ? "bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-transparent dark:to-transparent dark:bg-gradient-to-b dark:from-emerald-500/[0.06] dark:to-emerald-500/[0.01] border-emerald-300 dark:border-emerald-500/25"
+                        : "bg-gradient-to-br from-purple-50 to-purple-100 dark:from-transparent dark:to-transparent dark:bg-gradient-to-b dark:from-purple-500/[0.07] dark:to-purple-500/[0.02] border-purple-300 dark:border-purple-500/25"
+                  }`}
                   style={{
-                    background: bgStyle,
-                    border: `1px solid ${borderStyle}`,
-                    boxShadow: plan.key !== "FREE" ? `0 0 30px ${plan.accentBg}` : undefined,
+                    boxShadow: plan.key !== "FREE" ? `0 0 30px ${plan.accentBg}` : "0 4px 12px rgba(0,0,0,0.08)",
                   }}
                 >
                   <div className="relative p-4 flex flex-col h-full z-10">
@@ -867,7 +857,7 @@ export default async function DashboardPage() {
                       >
                         <Icon className="w-4 h-4" style={{ color: plan.accent }} />
                       </div>
-                      <p className="text-sm font-black font-display text-white">
+                      <p className="text-sm font-black font-display text-gray-900 dark:text-white">
                         {plan.name}
                       </p>
                     </div>
@@ -876,28 +866,28 @@ export default async function DashboardPage() {
                     <div className="mb-3">
                       {plan.price ? (
                         <div className="flex items-baseline gap-1">
-                          <span className="text-2xl font-black font-display text-white leading-none">
+                          <span className="text-2xl font-black font-display text-gray-900 dark:text-white leading-none">
                             {plan.price}
                           </span>
-                          <span className="text-[9px] font-bold text-gray-500 uppercase">
+                          <span className="text-[9px] font-bold text-gray-600 dark:text-gray-500 uppercase">
                             сом<br/>/ мес
                           </span>
                         </div>
                       ) : (
-                        <span className="text-sm font-bold text-gray-500">0 сом</span>
+                        <span className="text-sm font-bold text-gray-600 dark:text-gray-500">0 сом</span>
                       )}
                     </div>
 
                     {/* Divider */}
-                    <div className="w-full h-px bg-white/[0.04] mb-3" />
+                    <div className="w-full h-px bg-gray-200 dark:bg-white/[0.04] mb-3" />
 
                     {/* Features — vertical list */}
                     <div className="space-y-2 mb-4 flex-1">
                       {plan.features.map((f) => (
                         <div key={f} className="flex items-start gap-2">
                           {f.startsWith("Без") ? (
-                            <div className="w-4 h-4 rounded-full bg-white/5 flex items-center justify-center flex-shrink-0 mt-0.5">
-                              <div className="w-1.5 h-0.5 bg-gray-500 rounded-full" />
+                            <div className="w-4 h-4 rounded-full bg-gray-200 dark:bg-white/5 flex items-center justify-center flex-shrink-0 mt-0.5">
+                              <div className="w-1.5 h-0.5 bg-gray-500 dark:bg-gray-500 rounded-full" />
                             </div>
                           ) : (
                             <div
@@ -907,7 +897,7 @@ export default async function DashboardPage() {
                               <Check className="w-2.5 h-2.5" style={{ color: plan.accent }} strokeWidth={4} />
                             </div>
                           )}
-                          <p className="text-[11px] text-gray-400 leading-tight">{f}</p>
+                          <p className="text-[11px] text-gray-700 dark:text-gray-400 leading-tight">{f}</p>
                         </div>
                       ))}
                     </div>
@@ -929,11 +919,11 @@ export default async function DashboardPage() {
                                 color: "#000",
                                 boxShadow: "0 4px 16px rgba(0,208,132,0.35)",
                               }
-                            : plan.btnStyle === "amber"
+                            : plan.btnStyle === "purple"
                               ? {
-                                  background: "#f59e0b",
+                                  background: "linear-gradient(135deg, #a78bfa, #8b5cf6)",
                                   color: "#fff",
-                                  boxShadow: "0 4px 16px rgba(245,158,11,0.35)",
+                                  boxShadow: "0 4px 16px rgba(167,139,250,0.4)",
                                 }
                               : {
                                   background: "transparent",
