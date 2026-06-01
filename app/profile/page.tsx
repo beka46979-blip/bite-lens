@@ -58,19 +58,41 @@ export default async function ProfilePage() {
   const locale = await getLocaleFromCookie();
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-emerald-50 via-teal-50 to-cyan-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+    <div className="min-h-screen bg-gray-950">
       {/* Sticky Header */}
-      <header className="sticky top-0 z-30 bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl border-b border-gray-200 dark:border-gray-800">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            {/* Left: Back button + User */}
-            <div className="flex items-center gap-3 min-w-0">
+      <header
+        className="sticky top-0 z-30 backdrop-blur-xl bg-white/70 dark:bg-gray-900/70 border-b border-gray-200 dark:border-gray-800"
+      >
+        <div style={{ maxWidth: 1024, margin: "0 auto", padding: "0 24px" }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              height: 64,
+            }}
+          >
+            {/* Left: Back + User */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+                minWidth: 0,
+              }}
+            >
               {userData.onboardingCompleted && (
                 <Link
                   href="/dashboard"
-                  className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                  style={{
+                    padding: 8,
+                    borderRadius: 8,
+                    color: "var(--lp-muted)",
+                    display: "flex",
+                    alignItems: "center",
+                  }}
                 >
-                  <ArrowLeft className="w-5 h-5" />
+                  <ArrowLeft style={{ width: 20, height: 20 }} />
                 </Link>
               )}
               <ProfileHeader
@@ -81,22 +103,50 @@ export default async function ProfilePage() {
             </div>
 
             {/* Right: Actions */}
-            <div className="flex items-center gap-2 flex-shrink-0">
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                flexShrink: 0,
+              }}
+            >
               <ThemeToggle />
               {userData.onboardingCompleted && (
                 <Link
                   href="/dashboard"
-                  className="hidden sm:inline-flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-semibold hover:bg-gray-800 dark:hover:bg-gray-100"
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 8,
+                    padding: "8px 16px",
+                    background: "var(--lp-green)",
+                    color: "#fff",
+                    borderRadius: 8,
+                    fontSize: "0.875rem",
+                    fontWeight: 600,
+                    textDecoration: "none",
+                  }}
                 >
-                  <LayoutDashboard className="w-4 h-4" />
-                  Dashboard
+                  <LayoutDashboard style={{ width: 16, height: 16 }} />
+                  <span className="hidden sm:inline">Dashboard</span>
                 </Link>
               )}
               <Link
                 href="/force-logout"
-                className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 8,
+                  padding: "8px 12px",
+                  color: "#f87171",
+                  borderRadius: 8,
+                  fontSize: "0.875rem",
+                  fontWeight: 500,
+                  textDecoration: "none",
+                }}
               >
-                <LogOut className="w-4 h-4" />
+                <LogOut style={{ width: 16, height: 16 }} />
                 <span className="hidden sm:inline">Выйти</span>
               </Link>
             </div>
@@ -105,29 +155,44 @@ export default async function ProfilePage() {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
+      <main style={{ maxWidth: 1024, margin: "0 auto", padding: "40px 24px" }}>
         {/* Page heading */}
-        <div className="mb-6 sm:mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white tracking-tight">
+        <div style={{ marginBottom: 32 }}>
+          <h1
+            style={{
+              fontFamily: "var(--font-syne), sans-serif",
+              fontSize: "clamp(1.5rem, 3vw, 1.875rem)",
+              fontWeight: 800,
+              color: "var(--lp-text)",
+              letterSpacing: "-0.025em",
+            }}
+          >
             {userData.onboardingCompleted ? "Профиль" : "Завершите настройку"}
           </h1>
-          <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400 mt-1">
+          <p style={{ fontSize: "0.875rem", color: "var(--lp-muted)", marginTop: 4 }}>
             {userData.onboardingCompleted
               ? "Управляйте своими данными для точных AI-рекомендаций"
               : "Несколько шагов и приложение подстроится под вас"}
           </p>
         </div>
 
-        {/* Form Container */}
-        <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
-          {userData.onboardingCompleted ? (
-            <div className="p-5 sm:p-8">
-              <ProfileForm user={userData} locale={locale} />
-            </div>
-          ) : (
+        {/* Form Container - убрана белая карточка */}
+        {userData.onboardingCompleted ? (
+          <div>
+            <ProfileForm user={userData} locale={locale} />
+          </div>
+        ) : (
+          <div
+            style={{
+              background: "var(--lp-card)",
+              borderRadius: 16,
+              border: "1px solid var(--lp-border)",
+              overflow: "hidden",
+            }}
+          >
             <OnboardingWizard user={userData} />
-          )}
-        </div>
+          </div>
+        )}
       </main>
     </div>
   );

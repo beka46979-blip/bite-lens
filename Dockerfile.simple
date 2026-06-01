@@ -1,0 +1,37 @@
+# Простая версия Dockerfile (используйте если основной не работает)
+FROM node:20-alpine
+
+# Устанавливаем рабочую директорию
+WORKDIR /app
+
+# Устанавливаем необходимые системные зависимости
+RUN apk add --no-cache libc6-compat openssl
+
+# Копируем файлы зависимостей
+COPY package*.json ./
+
+# Устанавливаем зависимости
+RUN npm ci
+
+# Копируем Prisma схему
+COPY prisma ./prisma/
+
+# Генерируем Prisma Client
+RUN npx prisma generate
+
+# Копируем остальные файлы проекта
+COPY . .
+
+# Собираем Next.js приложение
+RUN npm run build
+
+# Открываем порт 3000
+EXPOSE 3000
+
+# Устанавливаем переменные окружения
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV PORT=3000
+
+# Запускаем миграции и стартуем приложение
+CMD ["sh", "-c", "npx prisma migrate deploy && npm start"]

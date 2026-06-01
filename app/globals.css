@@ -85,6 +85,126 @@ html {
     display: none;
 }
 
+/* ── Landing page design tokens ──────────────────────────────────────── */
+:root {
+  --lp-bg:            #f4f6f9;
+  --lp-bg2:           #ffffff;
+  --lp-bg3:           #eef1f5;
+  --lp-card:          #ffffff;
+  --lp-border:        rgba(0,0,0,0.07);
+  --lp-green:         #1db87a;
+  --lp-green-soft:    #e8f8f1;
+  --lp-green-mid:     rgba(29,184,122,0.15);
+  --lp-green-glow:    rgba(29,184,122,0.20);
+  --lp-green-btn:     #17a86e;
+  --lp-green-txt:     #ffffff;
+  --lp-purple:        #7c5cfc;
+  --lp-purple-soft:   #f0ecff;
+  --lp-text:          #1a1d23;
+  --lp-muted:         #8a93a2;
+  --lp-muted2:        #c4cbd6;
+  --lp-shadow:        0 2px 16px rgba(0,0,0,0.06);
+  --lp-shadow-md:     0 8px 32px rgba(0,0,0,0.09);
+  --lp-radius:        20px;
+  --lp-radius-sm:     14px;
+  /* pricing cards */
+  --lp-pro-bg:        linear-gradient(145deg,#edfaf4,#f4fdf9);
+  --lp-pro-bdr:       rgba(29,184,122,0.30);
+  --lp-pro-shadow:    0 0 0 1px rgba(29,184,122,0.15), 0 8px 32px rgba(0,0,0,0.09);
+  --lp-prem-bg:       linear-gradient(145deg,#f5f0ff,#faf7ff);
+  --lp-prem-bdr:      rgba(124,92,252,0.25);
+  --lp-prem-shadow:   0 0 0 1px rgba(124,92,252,0.12), 0 8px 32px rgba(0,0,0,0.09);
+  /* cta */
+  --lp-cta-bg:          #1a1d23;
+  --lp-cta-bdr:         transparent;
+  --lp-cta-title:       #ffffff;
+  --lp-cta-sub:         rgba(255,255,255,0.50);
+  --lp-cta-trust:       rgba(255,255,255,0.40);
+  --lp-cta-outline-bdr: rgba(255,255,255,0.20);
+  --lp-cta-btn1-bg:     #ffffff;
+  --lp-cta-btn1-clr:    #1a1d23;
+  --lp-cta-btn2-clr:    #ffffff;
+}
+.dark {
+  --lp-bg:            #0d1117;
+  --lp-bg2:           #161b22;
+  --lp-bg3:           #1c2330;
+  --lp-card:          rgba(255,255,255,0.04);
+  --lp-border:        rgba(255,255,255,0.08);
+  --lp-green:         #00d084;
+  --lp-green-soft:    rgba(0,208,132,0.15);
+  --lp-green-mid:     rgba(0,208,132,0.15);
+  --lp-green-glow:    rgba(0,208,132,0.25);
+  --lp-green-btn:     #00e890;
+  --lp-green-txt:     #000000;
+  --lp-purple:        #7c5cfc;
+  --lp-purple-soft:   rgba(124,92,252,0.15);
+  --lp-text:          #e6edf3;
+  --lp-muted:         #7d8590;
+  --lp-muted2:        #484f58;
+  --lp-shadow:        none;
+  --lp-shadow-md:     none;
+  /* pricing cards — dark gradients */
+  --lp-pro-bg:        linear-gradient(145deg,#1a2e20,#142218);
+  --lp-pro-bdr:       rgba(0,208,132,0.35);
+  --lp-pro-shadow:    0 0 40px rgba(0,208,132,0.10);
+  --lp-prem-bg:       linear-gradient(145deg,#1e1830,#160f28);
+  --lp-prem-bdr:      rgba(124,92,252,0.35);
+  --lp-prem-shadow:   0 0 40px rgba(124,92,252,0.10);
+  /* cta — dark uses bg2 with border */
+  --lp-cta-bg:          #161b22;
+  --lp-cta-bdr:         rgba(255,255,255,0.08);
+  --lp-cta-title:       #ffffff;
+  --lp-cta-sub:         #7d8590;
+  --lp-cta-trust:       #7d8590;
+  --lp-cta-outline-bdr: rgba(255,255,255,0.15);
+  /* dark: CTA primary btn is green */
+  --lp-cta-btn1-bg:     #00d084;
+  --lp-cta-btn1-clr:    #000000;
+  --lp-cta-btn2-clr:    #e6edf3;
+}
+
+/* ── Landing page keyframes ──────────────────────────────────────────── */
+@keyframes lp-pulse {
+  0%,100% { opacity:1; transform:scale(1); }
+  50%      { opacity:.4; transform:scale(1.5); }
+}
+@keyframes lp-scan {
+  0%   { top:0;    opacity:0; }
+  10%  { opacity:1; }
+  90%  { opacity:1; }
+  100% { top:100%; opacity:0; }
+}
+@keyframes lp-fade-up {
+  from { opacity:0; transform:translateY(24px); }
+  to   { opacity:1; transform:translateY(0);    }
+}
+
+/* ── Landing page utility classes ────────────────────────────────────── */
+.lp-fade-up { opacity:0; transform:translateY(24px); transition:opacity .7s ease, transform .7s ease; }
+.lp-fade-up.lp-vis { opacity:1; transform:translateY(0); }
+
+/* ── Form / profile helpers ──────────────────────────────────────────── */
+.lp-input {
+  background: var(--lp-bg2);
+  border: 1px solid var(--lp-border);
+  color: var(--lp-text);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.lp-input::placeholder { color: var(--lp-muted); }
+.lp-input:focus {
+  border-color: var(--lp-green);
+  box-shadow: 0 0 0 3px var(--lp-green-soft);
+  outline: none;
+}
+.lp-input option {
+  background: var(--lp-bg2);
+  color: var(--lp-text);
+}
+/* Profile form section dividers */
+.profile-section { border-bottom: 1px solid var(--lp-border); }
+.profile-section:last-of-type { border-bottom: none; }
+
 /* Animations */
 @keyframes fadeIn {
     from {
@@ -128,6 +248,18 @@ html {
     }
 }
 
+@keyframes shake {
+    0%, 100% {
+        transform: translateX(0);
+    }
+    10%, 30%, 50%, 70%, 90% {
+        transform: translateX(-4px);
+    }
+    20%, 40%, 60%, 80% {
+        transform: translateX(4px);
+    }
+}
+
 .animate-fade-in {
     animation: fadeIn 0.6s ease-out;
 }
@@ -142,6 +274,10 @@ html {
 
 .animate-progress {
     animation: progress linear;
+}
+
+.animate-shake {
+    animation: shake 0.5s ease-in-out;
 }
 
 /* ── Streak Celebration ──────────────────────────────── */
@@ -215,8 +351,8 @@ html {
 }
 .dark .dash-glass {
     background: rgba(255, 255, 255, 0.045);
-    border: 1px solid rgba(255, 255, 255, 0.075);
-    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.55);
 }
 
 /* ── Glow tints ─────────────────────────────────────── */

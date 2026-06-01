@@ -1,746 +1,800 @@
 'use client';
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
+import Link from "next/link";
 import {
-  Camera,
-  Target,
-  BarChart3,
-  Flame,
-  Scale,
-  Bell,
-  Menu,
-  X,
-  Sparkles,
-  ArrowRight,
-  Check,
-  Zap,
-  Shield,
-  Star,
+  Menu, X,
+  Camera, Target, BarChart3, Trophy, Scale, Bell,
+  Zap, Crown, Check, Minus, Lock, Smartphone,
+  Flame, Dumbbell, Wheat, Droplets,
+  UtensilsCrossed, Apple, Salad, Coffee,
+  type LucideIcon,
 } from "lucide-react";
-import { FeatureCard } from "./FeatureCard";
-import { LanguageSwitcher } from "./LanguageSwitcher";
 import { ThemeToggle } from "./ThemeToggle";
+import { LanguageSwitcher } from "./LanguageSwitcher";
 import { useTranslation } from "@/app/i18n/useTranslation";
 import { Locale } from "@/app/i18n";
-import Link from "next/link";
 
-interface LocalizedLandingPageProps {
-  locale: Locale;
+// ── tiny hook for fade-up animation on scroll ─────────────────────────────
+function useFadeUp() {
+  const ref = useRef<HTMLDivElement>(null);
+  const [vis, setVis] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    if (el.getBoundingClientRect().top < window.innerHeight) { setVis(true); return; }
+    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) setVis(true); }, { threshold: 0.12 });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+  return { ref, className: `lp-fade-up${vis ? " lp-vis" : ""}` };
 }
 
-export function LocalizedLandingPage({ locale }: LocalizedLandingPageProps) {
-  const { t } = useTranslation(locale, 'landing');
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+// ── shared style helpers ──────────────────────────────────────────────────
+const SYNE: React.CSSProperties = { fontFamily: "var(--font-syne), sans-serif" };
+const V = (v: string) => `var(${v})`;
+const WRAP: React.CSSProperties = { maxWidth: 1280, margin: "0 auto" };
+
+// ── feature icon components ───────────────────────────────────────────────
+const FEAT_ICONS: LucideIcon[] = [Camera, Target, BarChart3, Trophy, Scale, Bell];
+
+// ── log items for hero mockup ─────────────────────────────────────────────
+const LOG_ITEMS: { Icon: LucideIcon; name: string; time: string; kcal: string }[] = [
+  { Icon: Coffee,       name: "Овсянка", time: "08:30", kcal: "320 ккал" },
+  { Icon: Apple,        name: "Яблоко",  time: "11:00", kcal: "89 ккал"  },
+  { Icon: Salad,        name: "Салат",   time: "13:15", kcal: "180 ккал" },
+];
+
+// ── how-it-works result rows ──────────────────────────────────────────────
+const HOW_ROWS: { Icon: LucideIcon; lbl: string; val: string }[] = [
+  { Icon: Flame,    lbl: "Калории",  val: "340 ккал" },
+  { Icon: Dumbbell, lbl: "Белки",    val: "18 г"     },
+  { Icon: Wheat,    lbl: "Углеводы", val: "32 г"     },
+  { Icon: Droplets, lbl: "Жиры",     val: "14 г"     },
+];
+
+// ── pricing data ──────────────────────────────────────────────────────────
+const PLANS = [
+  {
+    key:      "free",
+    PillIcon: Scale,
+    pillLabel: "Free",
+    price:    "0",
+    currency: "сом",
+    period:   "навсегда бесплатно",
+    feats: [
+      { ok: true,  label: "Трекер калорий"      },
+      { ok: true,  label: "3 приёма в день"      },
+      { ok: true,  label: "Базовые макро"        },
+      { ok: false, label: "Без AI-сканирования"  },
+      { ok: false, label: "Без аналитики"        },
+    ],
+    btnLabel: "Начать бесплатно",
+    href:     "/register",
+  },
+  {
+    key:      "pro",
+    PillIcon: Zap,
+    pillLabel: "Популярный",
+    price:    "490",
+    currency: "сом/мес",
+    period:   "отмена в любое время",
+    feats: [
+      { ok: true, label: "Всё из Free"           },
+      { ok: true, label: "AI-сканирование"       },
+      { ok: true, label: "Неограниченные снапы"  },
+      { ok: true, label: "Детальная аналитика"   },
+      { ok: true, label: "Персональный план"     },
+    ],
+    btnLabel: "Перейти на Pro",
+    highlight: true,
+    href:     "/subscription?plan=pro",
+  },
+  {
+    key:      "premium",
+    PillIcon: Crown,
+    pillLabel: "Лучший",
+    price:    "890",
+    currency: "сом/мес",
+    period:   "полный доступ",
+    feats: [
+      { ok: true, label: "Всё из Pro"                },
+      { ok: true, label: "AI-тренер 24/7"            },
+      { ok: true, label: "Рецепты под план"          },
+      { ok: true, label: "Приоритетная поддержка"    },
+      { ok: true, label: "Ранний доступ"             },
+    ],
+    btnLabel: "Получить Premium",
+    href:     "/subscription?plan=premium",
+  },
+];
+
+// ─────────────────────────────────────────────────────────────────────────────
+export function LocalizedLandingPage({ locale }: { locale: Locale }) {
+  const { t } = useTranslation(locale, "landing");
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  const mockFU  = useFadeUp();
+  const featFU  = useFadeUp();
+  const visFU   = useFadeUp();
+  const priceFU = useFadeUp();
+  const ctaFU   = useFadeUp();
+
+  const bg    = V("--lp-bg");
+  const bg2   = V("--lp-bg2");
+  const bg3   = V("--lp-bg3");
+  const card  = V("--lp-card");
+  const bdr   = V("--lp-border");
+  const grn   = V("--lp-green");
+  const gSoft = V("--lp-green-soft");
+  const gMid  = V("--lp-green-mid");
+  const gGlow = V("--lp-green-glow");
+  const gBtn  = V("--lp-green-btn");
+  const gTxt  = V("--lp-green-txt");
+  const pur   = V("--lp-purple");
+  const pSoft = V("--lp-purple-soft");
+  const txt   = V("--lp-text");
+  const mut   = V("--lp-muted");
+  const mut2  = V("--lp-muted2");
+  const shad  = V("--lp-shadow");
+  const shadM = V("--lp-shadow-md");
+  const rad   = V("--lp-radius");
+  const radS  = V("--lp-radius-sm");
+  const proBg   = V("--lp-pro-bg");   const proBdr   = V("--lp-pro-bdr");   const proShad  = V("--lp-pro-shadow");
+  const premBg  = V("--lp-prem-bg");  const premBdr  = V("--lp-prem-bdr");  const premShad = V("--lp-prem-shadow");
+  const ctaBg   = V("--lp-cta-bg");   const ctaBdr   = V("--lp-cta-bdr");
+  const ctaTitle= V("--lp-cta-title");const ctaSub   = V("--lp-cta-sub");
+  const ctaTrust= V("--lp-cta-trust");const ctaObdr  = V("--lp-cta-outline-bdr");
+  const ctaB1bg = V("--lp-cta-btn1-bg"); const ctaB1cl = V("--lp-cta-btn1-clr");
+  const ctaB2cl = V("--lp-cta-btn2-clr");
 
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-950">
-      {/* Header */}
-      <header className="fixed top-0 w-full bg-white/80 dark:bg-gray-950/80 backdrop-blur-xl z-50 border-b border-gray-100 dark:border-gray-900">
-        <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2.5">
-            <div className="w-8 h-8 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-lg flex items-center justify-center shadow-sm">
-              <span className="text-white font-bold text-lg">B</span>
-            </div>
-            <span className="text-lg font-semibold text-gray-900 dark:text-white tracking-tight">
-              {t.header.appName}
-            </span>
-          </Link>
+    <div style={{ background: bg, color: txt, fontFamily: "var(--font-geist-sans), sans-serif", overflowX: "hidden" }}>
 
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-1">
-            <a
-              href="#features"
-              className="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white rounded-lg hover:bg-gray-100 dark:hover:bg-gray-900"
-            >
-              {t.header.nav.features}
-            </a>
-            <a
-              href="#how-it-works"
-              className="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white rounded-lg hover:bg-gray-100 dark:hover:bg-gray-900"
-            >
-              {t.header.nav.howItWorks}
-            </a>
-            <a
-              href="#pricing"
-              className="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white rounded-lg hover:bg-gray-100 dark:hover:bg-gray-900"
-            >
-              {t.header.nav.pricing}
-            </a>
+      {/* ── NAV ──────────────────────────────────────────────────────────── */}
+      <nav style={{
+        position: "fixed", top: 0, left: 0, right: 0, zIndex: 100,
+        background: `color-mix(in srgb, ${bg} 88%, transparent)`,
+        backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)",
+        borderBottom: `1px solid ${bdr}`,
+      }}>
+        <div style={{ ...WRAP, padding: "14px 48px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        {/* Logo */}
+        <Link href="/" style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none" }}>
+          <div style={{
+            width: 34, height: 34, borderRadius: 12,
+            background: gSoft, border: `1.5px solid rgba(29,184,122,0.25)`,
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}>
+            <Camera size={17} style={{ color: grn }} />
           </div>
+          <span style={{ ...SYNE, fontWeight: 800, fontSize: 20, color: txt }}>
+            {t.header.appName}
+          </span>
+        </Link>
 
-          {/* Desktop Actions */}
-          <div className="hidden md:flex items-center gap-2">
+        {/* Desktop links */}
+        <ul className="hidden md:flex" style={{ listStyle: "none", display: "flex", gap: 32, margin: 0, padding: 0 }}>
+          {[
+            { href: "#features", label: t.header.nav.features    },
+            { href: "#how",      label: t.header.nav.howItWorks  },
+            { href: "#pricing",  label: t.header.nav.pricing      },
+          ].map(({ href, label }) => (
+            <li key={href}>
+              <a href={href} style={{ color: mut, fontSize: 14, textDecoration: "none", transition: "color .2s" }}
+                onMouseEnter={e => (e.currentTarget.style.color = txt)}
+                onMouseLeave={e => (e.currentTarget.style.color = mut)}>
+                {label}
+              </a>
+            </li>
+          ))}
+        </ul>
+
+        {/* Desktop actions */}
+        <div className="hidden md:flex" style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <span style={{
+            fontSize: 11, background: gSoft, color: grn, padding: "4px 11px",
+            borderRadius: 50, border: `1px solid rgba(29,184,122,0.2)`, fontWeight: 500,
+          }}>AI powered</span>
+          <ThemeToggle />
+          <LanguageSwitcher currentLocale={locale} />
+          <Link href="/login" style={{ fontSize: 14, color: mut, textDecoration: "none", padding: "8px 12px" }}>
+            {t.header.buttons.login}
+          </Link>
+          <Link href="/register" style={{
+            background: grn, color: gTxt, padding: "10px 22px", borderRadius: 50,
+            fontSize: 14, fontWeight: 600, textDecoration: "none", whiteSpace: "nowrap",
+            transition: "all .2s",
+          }}
+            onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.background = gBtn; el.style.transform = "translateY(-1px)"; }}
+            onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.background = grn; el.style.transform = ""; }}>
+            Начать бесплатно
+          </Link>
+        </div>
+
+        {/* Mobile hamburger */}
+        <button className="md:hidden" onClick={() => setMobileOpen(!mobileOpen)}
+          style={{ background: "none", border: "none", cursor: "pointer", color: txt, padding: 4 }}>
+          {mobileOpen ? <X size={22} /> : <Menu size={22} />}
+        </button>
+        </div>
+      </nav>
+
+      {/* Mobile menu */}
+      {mobileOpen && (
+        <div style={{
+          position: "fixed", top: 57, left: 0, right: 0, zIndex: 99,
+          background: bg2, borderBottom: `1px solid ${bdr}`,
+          padding: "16px 24px 20px",
+        }}>
+          {[
+            { href: "#features", label: t.header.nav.features   },
+            { href: "#how",      label: t.header.nav.howItWorks },
+            { href: "#pricing",  label: t.header.nav.pricing     },
+          ].map(({ href, label }) => (
+            <a key={href} href={href} onClick={() => setMobileOpen(false)} style={{
+              display: "block", padding: "12px 0",
+              borderBottom: `1px solid ${bdr}`, color: mut, fontSize: 15, textDecoration: "none",
+            }}>{label}</a>
+          ))}
+          <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 16 }}>
             <ThemeToggle />
             <LanguageSwitcher currentLocale={locale} />
-            <div className="w-px h-6 bg-gray-200 dark:bg-gray-800 mx-1" />
-            <Link
-              href="/login"
-              className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
-            >
-              {t.header.buttons.login}
-            </Link>
-            <Link
-              href="/register"
-              className="inline-flex items-center gap-1.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-gray-800 dark:hover:bg-gray-100 shadow-sm"
-            >
-              {t.header.buttons.getStarted}
-              <ArrowRight className="w-3.5 h-3.5" />
-            </Link>
           </div>
+          <Link href="/register" onClick={() => setMobileOpen(false)} style={{
+            display: "block", marginTop: 12, textAlign: "center",
+            background: grn, color: gTxt, padding: "12px 0", borderRadius: 50,
+            fontWeight: 600, fontSize: 15, textDecoration: "none",
+          }}>Начать бесплатно</Link>
+        </div>
+      )}
 
-          {/* Mobile Menu Button */}
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden p-2 text-gray-600 dark:text-gray-300"
-          >
-            {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-          </button>
-        </nav>
+      {/* ── HERO ─────────────────────────────────────────────────────────── */}
+      <section style={{
+        minHeight: "100vh", display: "flex", flexDirection: "column",
+        alignItems: "center", justifyContent: "center",
+        textAlign: "center", padding: "140px 24px 80px",
+        position: "relative", overflow: "hidden",
+      }}>
+        {/* Glow blobs */}
+        <div style={{
+          position: "absolute", top: "10%", left: "50%", transform: "translateX(-50%)",
+          width: 700, height: 500, pointerEvents: "none",
+          background: `radial-gradient(ellipse, ${gMid} 0%, transparent 65%)`,
+        }} />
+        <div style={{
+          position: "absolute", bottom: "15%", right: "5%",
+          width: 350, height: 350, pointerEvents: "none",
+          background: `radial-gradient(ellipse, ${pSoft} 0%, transparent 70%)`,
+        }} />
 
-        {/* Mobile Menu */}
-        {mobileMenuOpen && (
-          <div className="md:hidden bg-white dark:bg-gray-950 border-t border-gray-100 dark:border-gray-900">
-            <div className="px-4 py-4 space-y-1">
-              <a
-                href="#features"
-                onClick={() => setMobileMenuOpen(false)}
-                className="block px-3 py-2.5 text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-900 rounded-lg"
-              >
-                {t.header.nav.features}
-              </a>
-              <a
-                href="#how-it-works"
-                onClick={() => setMobileMenuOpen(false)}
-                className="block px-3 py-2.5 text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-900 rounded-lg"
-              >
-                {t.header.nav.howItWorks}
-              </a>
-              <a
-                href="#pricing"
-                onClick={() => setMobileMenuOpen(false)}
-                className="block px-3 py-2.5 text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-900 rounded-lg"
-              >
-                {t.header.nav.pricing}
-              </a>
-              <div className="pt-4 mt-4 border-t border-gray-100 dark:border-gray-900 space-y-2">
-                <div className="flex items-center justify-center gap-3 pb-2">
-                  <ThemeToggle />
-                  <LanguageSwitcher currentLocale={locale} />
-                </div>
-                <Link
-                  href="/login"
-                  className="block px-3 py-2.5 text-center text-base font-medium text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-800 rounded-lg"
-                >
-                  {t.header.buttons.login}
-                </Link>
-                <Link
-                  href="/register"
-                  className="block px-3 py-2.5 text-center bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-semibold"
-                >
-                  {t.header.buttons.getStarted}
-                </Link>
-              </div>
-            </div>
-          </div>
-        )}
-      </header>
-
-      {/* Hero Section */}
-      <section className="relative pt-32 sm:pt-40 pb-16 sm:pb-24 px-4 sm:px-6 lg:px-8 overflow-hidden">
-        {/* Background decoration */}
-        <div className="absolute inset-0 -z-10 overflow-hidden">
-          <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-gradient-radial from-emerald-200/40 via-teal-100/20 to-transparent dark:from-emerald-900/20 dark:via-teal-900/10 rounded-full blur-3xl" />
-          <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)]" />
+        {/* Badge */}
+        <div style={{
+          display: "inline-flex", alignItems: "center", gap: 8,
+          background: gSoft, color: grn,
+          fontSize: 12, fontWeight: 600, padding: "7px 16px",
+          borderRadius: 50, marginBottom: 28,
+          border: `1px solid rgba(29,184,122,0.2)`,
+        }}>
+          <span style={{
+            width: 6, height: 6, borderRadius: "50%", background: grn,
+            animation: "lp-pulse 1.5s infinite", display: "inline-block",
+          }} />
+          GPT-4 Vision · Мгновенный анализ
         </div>
 
-        <div className="max-w-5xl mx-auto text-center">
-          {/* Badge */}
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/50 dark:to-teal-950/50 border border-emerald-200/50 dark:border-emerald-800/50 rounded-full mb-8">
-            <Sparkles className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-            <span className="text-xs sm:text-sm font-medium text-emerald-700 dark:text-emerald-400">
-              {t.hero.badge}
-            </span>
+        {/* H1 */}
+        <h1 style={{
+          ...SYNE,
+          fontSize: "clamp(38px,7vw,84px)",
+          fontWeight: 800, lineHeight: 1.0, letterSpacing: -2,
+          color: txt, maxWidth: 820, marginBottom: 22,
+        }}>
+          {t.hero.title.part1}<br />
+          <em style={{ fontStyle: "normal", color: grn }}>{t.hero.title.part2}</em>
+        </h1>
+
+        {/* Sub */}
+        <p style={{ fontSize: 17, color: mut, maxWidth: 460, lineHeight: 1.7, marginBottom: 42, fontWeight: 300 }}>
+          {t.hero.description}
+        </p>
+
+        {/* Buttons */}
+        <div style={{ display: "flex", gap: 12, flexWrap: "wrap", justifyContent: "center", marginBottom: 64 }}>
+          <Link href="/register" style={{
+            background: grn, color: gTxt, padding: "15px 28px",
+            borderRadius: 50, fontSize: 15, fontWeight: 600,
+            textDecoration: "none", display: "flex", alignItems: "center", gap: 8,
+            transition: "all .2s",
+          }}
+            onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.background = gBtn; el.style.transform = "translateY(-2px)"; el.style.boxShadow = `0 6px 24px ${gGlow}`; }}
+            onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.background = grn; el.style.transform = ""; el.style.boxShadow = ""; }}>
+            <Camera size={16} />
+            {t.hero.buttons.tryFree}
+          </Link>
+          <a href="#how" style={{
+            background: bg2, color: txt, padding: "15px 28px",
+            borderRadius: 50, fontSize: 15, fontWeight: 500,
+            textDecoration: "none", border: `1px solid ${bdr}`,
+            boxShadow: shad, transition: "all .2s",
+          }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = "translateY(-2px)"; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = ""; }}>
+            Смотреть демо →
+          </a>
+        </div>
+
+        {/* ── Hero Mockup ────────────────────────────────────────────── */}
+        <div ref={mockFU.ref} className={mockFU.className} style={{
+          width: "100%", maxWidth: 760,
+          background: bg2, borderRadius: 26,
+          border: `1px solid ${bdr}`, overflow: "hidden",
+          boxShadow: "0 32px 80px rgba(0,0,0,0.12)",
+        }}>
+          {/* Window chrome */}
+          <div style={{
+            background: bg3, padding: "13px 20px",
+            display: "flex", alignItems: "center", gap: 8,
+            borderBottom: `1px solid ${bdr}`,
+          }}>
+            <div style={{ width: 11, height: 11, borderRadius: "50%", background: "#FF5F57" }} />
+            <div style={{ width: 11, height: 11, borderRadius: "50%", background: "#FEBC2E" }} />
+            <div style={{ width: 11, height: 11, borderRadius: "50%", background: "#28C840" }} />
+            <span style={{ fontSize: 13, color: mut, margin: "0 auto" }}>Bite Lens Dashboard</span>
           </div>
-
-          {/* Title */}
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-bold text-gray-900 dark:text-white tracking-tight leading-[1.05] mb-6">
-            {t.hero.title.part1}
-            <br className="hidden sm:block" />
-            <span className="bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 bg-clip-text text-transparent">
-              {t.hero.title.part2}
-            </span>
-          </h1>
-
-          {/* Description */}
-          <p className="max-w-2xl mx-auto text-base sm:text-lg lg:text-xl text-gray-600 dark:text-gray-400 leading-relaxed mb-10">
-            {t.hero.description}
-          </p>
-
-          {/* Buttons */}
-          <div className="flex flex-col sm:flex-row gap-3 justify-center mb-12">
-            <Link
-              href="/register"
-              className="inline-flex items-center justify-center gap-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 px-7 py-3.5 rounded-xl text-base font-semibold hover:bg-gray-800 dark:hover:bg-gray-100 shadow-lg shadow-gray-900/10 dark:shadow-white/10"
-            >
-              {t.hero.buttons.tryFree}
-              <ArrowRight className="w-4 h-4" />
-            </Link>
-            <button className="inline-flex items-center justify-center gap-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white px-7 py-3.5 rounded-xl text-base font-semibold hover:bg-gray-50 dark:hover:bg-gray-800">
-              {t.hero.buttons.watchDemo}
-            </button>
-          </div>
-
-          {/* Social proof */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6">
-            <div className="flex -space-x-2">
-              {[1, 2, 3, 4].map((i) => (
-                <div
-                  key={i}
-                  className="w-9 h-9 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 border-2 border-white dark:border-gray-950 shadow-sm"
-                />
-              ))}
-            </div>
-            <div className="flex flex-col items-center sm:items-start">
-              <div className="flex items-center gap-0.5">
-                {[1, 2, 3, 4, 5].map((i) => (
-                  <Star key={i} className="w-4 h-4 fill-amber-400 text-amber-400" />
+          {/* Body */}
+          <div style={{ padding: 24, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+            {/* Left col */}
+            <div>
+              {/* Photo card */}
+              <div style={{
+                background: bg3, border: `1px solid ${bdr}`,
+                borderRadius: radS, padding: 18, marginBottom: 12, textAlign: "center",
+              }}>
+                <div style={{
+                  width: "100%", height: 130, borderRadius: 10,
+                  background: `linear-gradient(135deg,var(--lp-green-soft),rgba(29,184,122,0.08))`,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  marginBottom: 12, position: "relative", overflow: "hidden",
+                }}>
+                  <UtensilsCrossed size={52} style={{ color: grn, opacity: 0.6 }} />
+                  <div style={{
+                    position: "absolute", top: 0, left: 0, right: 0, height: 2,
+                    background: `linear-gradient(90deg,transparent,${grn},transparent)`,
+                    animation: "lp-scan 2.5s ease-in-out infinite",
+                  }} />
+                </div>
+                <div style={{
+                  display: "inline-flex", alignItems: "center", gap: 6,
+                  background: gSoft, color: grn,
+                  fontSize: 12, fontWeight: 500, padding: "5px 12px",
+                  borderRadius: 50, border: `1px solid rgba(29,184,122,0.2)`,
+                }}>
+                  <span style={{
+                    width: 5, height: 5, borderRadius: "50%", background: grn,
+                    animation: "lp-pulse 1.5s infinite", display: "inline-block",
+                  }} />
+                  AI анализирует блюдо...
+                </div>
+              </div>
+              {/* Macros card */}
+              <div style={{ background: bg3, border: `1px solid ${bdr}`, borderRadius: radS, padding: 14 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+                  <div style={{
+                    width: 32, height: 32, borderRadius: 8,
+                    background: gSoft, display: "flex", alignItems: "center", justifyContent: "center",
+                  }}>
+                    <UtensilsCrossed size={16} style={{ color: grn }} />
+                  </div>
+                  <div>
+                    <div style={{ ...SYNE, fontSize: 14, fontWeight: 700, color: txt }}>Паста Карбонара</div>
+                    <div style={{ fontSize: 11, color: mut }}>~320 г · 1 порция</div>
+                  </div>
+                </div>
+                {[
+                  { lbl: "Белки",    pct: "70%", clr: grn,       val: "22г" },
+                  { lbl: "Углеводы", pct: "52%", clr: "#f59e0b",  val: "58г" },
+                  { lbl: "Жиры",     pct: "36%", clr: "#f97316",  val: "18г" },
+                ].map(({ lbl, pct, clr, val }) => (
+                  <div key={lbl} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 7, fontSize: 11 }}>
+                    <span style={{ color: mut, width: 54 }}>{lbl}</span>
+                    <div style={{ flex: 1, height: 5, background: mut2, borderRadius: 3, overflow: "hidden", opacity: 0.35 }}>
+                      <div style={{ height: "100%", borderRadius: 3, background: clr, width: pct }} />
+                    </div>
+                    <span style={{ width: 26, textAlign: "right", fontWeight: 600, color: txt }}>{val}</span>
+                  </div>
                 ))}
-                <span className="ml-2 text-sm font-semibold text-gray-900 dark:text-white">5.0</span>
-              </div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">{t.hero.social.users}</p>
-            </div>
-          </div>
-        </div>
-
-        {/* App Preview */}
-        <div className="max-w-5xl mx-auto mt-16 sm:mt-20 relative">
-          {/* Glow effect */}
-          <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/20 via-teal-500/20 to-cyan-500/20 blur-3xl -z-10" />
-
-          {/* Browser frame */}
-          <div className="bg-gray-100 dark:bg-gray-900 rounded-t-2xl border border-gray-200 dark:border-gray-800 shadow-2xl shadow-gray-900/10 dark:shadow-black/40 overflow-hidden">
-            {/* Browser dots */}
-            <div className="flex items-center gap-1.5 px-4 py-3 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950">
-              <div className="w-3 h-3 rounded-full bg-red-400" />
-              <div className="w-3 h-3 rounded-full bg-amber-400" />
-              <div className="w-3 h-3 rounded-full bg-emerald-400" />
-              <div className="flex-1 mx-4">
-                <div className="bg-gray-100 dark:bg-gray-900 rounded-md px-3 py-1 text-xs text-gray-500 dark:text-gray-500 max-w-md mx-auto text-center">
-                  bite-lens.app/dashboard
-                </div>
               </div>
             </div>
-
-            {/* App content mockup */}
-            <div className="bg-white dark:bg-gray-950 p-6 sm:p-8">
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                {/* Calorie ring card */}
-                <div className="lg:col-span-2 bg-gray-50 dark:bg-gray-900 rounded-xl p-6 border border-gray-200 dark:border-gray-800">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
-                      {t.hero.demo.calories}
-                    </h3>
-                    <span className="px-2 py-0.5 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 text-[10px] font-semibold rounded">
-                      LIVE
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-6">
-                    {/* SVG ring */}
-                    <div className="relative flex-shrink-0">
-                      <svg width="120" height="120" className="transform -rotate-90">
-                        <circle
-                          cx="60"
-                          cy="60"
-                          r="48"
-                          fill="none"
-                          strokeWidth="10"
-                          className="stroke-gray-200 dark:stroke-gray-800"
-                        />
-                        <circle
-                          cx="60"
-                          cy="60"
-                          r="48"
-                          fill="none"
-                          strokeWidth="10"
-                          strokeLinecap="round"
-                          strokeDasharray={2 * Math.PI * 48}
-                          strokeDashoffset={2 * Math.PI * 48 * (1 - 0.65)}
-                          className="stroke-emerald-500"
-                        />
-                      </svg>
-                      <div className="absolute inset-0 flex flex-col items-center justify-center">
-                        <p className="text-2xl font-bold text-gray-900 dark:text-white">450</p>
-                        <p className="text-[10px] text-gray-500 dark:text-gray-400">из 700</p>
-                      </div>
-                    </div>
-                    {/* Macros */}
-                    <div className="flex-1 space-y-2">
-                      <div>
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-xs text-gray-600 dark:text-gray-400">{t.hero.demo.protein}</span>
-                          <span className="text-xs font-semibold text-gray-900 dark:text-white">25г</span>
-                        </div>
-                        <div className="h-1.5 bg-gray-200 dark:bg-gray-800 rounded-full overflow-hidden">
-                          <div className="h-full w-3/4 bg-blue-500 rounded-full" />
-                        </div>
-                      </div>
-                      <div>
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-xs text-gray-600 dark:text-gray-400">{t.hero.demo.fats}</span>
-                          <span className="text-xs font-semibold text-gray-900 dark:text-white">15г</span>
-                        </div>
-                        <div className="h-1.5 bg-gray-200 dark:bg-gray-800 rounded-full overflow-hidden">
-                          <div className="h-full w-1/2 bg-amber-500 rounded-full" />
-                        </div>
-                      </div>
-                      <div>
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-xs text-gray-600 dark:text-gray-400">{t.hero.demo.carbs}</span>
-                          <span className="text-xs font-semibold text-gray-900 dark:text-white">45г</span>
-                        </div>
-                        <div className="h-1.5 bg-gray-200 dark:bg-gray-800 rounded-full overflow-hidden">
-                          <div className="h-full w-2/3 bg-purple-500 rounded-full" />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+            {/* Right col */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              <div style={{ background: gSoft, border: `1px solid rgba(29,184,122,0.2)`, borderRadius: radS, padding: 14 }}>
+                <div style={{ ...SYNE, fontSize: 28, fontWeight: 800, color: grn, lineHeight: 1 }}>450</div>
+                <div style={{ fontSize: 11, color: grn, opacity: 0.7, marginTop: 3 }}>ккал в этом блюде</div>
+              </div>
+              <div style={{ background: bg2, border: `1px solid ${bdr}`, borderRadius: radS, padding: 14, boxShadow: shad }}>
+                <div style={{ ...SYNE, fontSize: 28, fontWeight: 800, color: txt, lineHeight: 1 }}>1 350</div>
+                <div style={{ fontSize: 11, color: mut, marginTop: 3 }}>осталось сегодня</div>
+              </div>
+              <div style={{ background: bg2, border: `1px solid ${bdr}`, borderRadius: radS, padding: 14, boxShadow: shad }}>
+                <div style={{ fontSize: 11, color: mut, marginBottom: 8 }}>Дневная цель</div>
+                <div style={{ height: 7, background: bg3, borderRadius: 4, overflow: "hidden", marginBottom: 6 }}>
+                  <div style={{ height: "100%", width: "68%", borderRadius: 4, background: grn }} />
                 </div>
-
-                {/* Side card */}
-                <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl p-6 text-white relative overflow-hidden">
-                  <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full blur-2xl" />
-                  <div className="relative">
-                    <Camera className="w-6 h-6 mb-3" />
-                    <p className="text-sm font-semibold mb-1">AI анализ</p>
-                    <p className="text-xs text-white/80 mb-4">Сканируй и получи КБЖУ за секунды</p>
-                    <div className="flex items-center gap-2 text-xs">
-                      <Zap className="w-3 h-3" />
-                      <span>GPT-4 Vision</span>
-                    </div>
-                  </div>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11 }}>
+                  <span style={{ color: grn, fontWeight: 600 }}>1 250 ккал</span>
+                  <span style={{ color: mut }}>/ 1 800</span>
                 </div>
               </div>
-
-              {/* Recent meal item */}
-              <div className="mt-4 flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800">
-                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-orange-200 to-red-300 flex items-center justify-center text-lg flex-shrink-0">
-                  🍽️
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">Бешбармак</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">12:30 · Обед</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm font-bold text-gray-900 dark:text-white">450</p>
-                  <p className="text-[10px] text-gray-500 dark:text-gray-400">ккал</p>
-                </div>
+              <div style={{ background: bg2, border: `1px solid ${bdr}`, borderRadius: radS, padding: 12, boxShadow: shad, flex: 1 }}>
+                <div style={{ fontSize: 11, color: mut, marginBottom: 8, fontWeight: 500 }}>Сегодня</div>
+                {LOG_ITEMS.map(({ Icon, name, time, kcal }) => (
+                  <div key={name} style={{
+                    display: "flex", alignItems: "center", gap: 8,
+                    padding: "5px 0", borderBottom: `1px solid ${bg3}`,
+                  }}>
+                    <div style={{
+                      width: 24, height: 24, borderRadius: 6, background: gSoft,
+                      display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+                    }}>
+                      <Icon size={12} style={{ color: grn }} />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 11, fontWeight: 500, color: txt }}>{name}</div>
+                      <div style={{ fontSize: 10, color: mut }}>{time}</div>
+                    </div>
+                    <span style={{ fontSize: 11, fontWeight: 600, color: grn }}>{kcal}</span>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Logos / Trust bar */}
-      <section className="py-12 px-4 sm:px-6 lg:px-8 border-y border-gray-100 dark:border-gray-900 bg-gray-50/50 dark:bg-gray-950/50">
-        <div className="max-w-7xl mx-auto">
-          <p className="text-center text-xs font-semibold text-gray-500 dark:text-gray-500 uppercase tracking-widest mb-6">
-            Powered by
-          </p>
-          <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-4 sm:gap-x-12 opacity-60 dark:opacity-50">
-            <div className="text-base sm:text-lg font-bold text-gray-900 dark:text-white">OpenAI GPT-4</div>
-            <div className="text-base sm:text-lg font-bold text-gray-900 dark:text-white">Next.js 16</div>
-            <div className="text-base sm:text-lg font-bold text-gray-900 dark:text-white">PostgreSQL</div>
-            <div className="text-base sm:text-lg font-bold text-gray-900 dark:text-white">React 19</div>
-            <div className="text-base sm:text-lg font-bold text-gray-900 dark:text-white">Tailwind v4</div>
+      {/* ── STATS BAR ────────────────────────────────────────────────────── */}
+      <div style={{
+        background: bg2,
+        borderTop: `1px solid ${bdr}`, borderBottom: `1px solid ${bdr}`,
+      }}>
+        <div style={{ ...WRAP, display: "grid", gridTemplateColumns: "repeat(4,1fr)" }}>
+        {[
+          { val: t.stats.activeUsers.value,   lbl: t.stats.activeUsers.label   },
+          { val: t.stats.analyzedMeals.value, lbl: t.stats.analyzedMeals.label },
+          { val: t.stats.aiAccuracy.value,    lbl: t.stats.aiAccuracy.label    },
+          { val: `${t.stats.rating.value}★`,  lbl: t.stats.rating.label        },
+        ].map(({ val, lbl }, i) => (
+          <div key={i} style={{
+            padding: "36px 24px", textAlign: "center",
+            borderRight: i < 3 ? `1px solid ${bdr}` : "none",
+          }}>
+            <div style={{ ...SYNE, fontSize: 38, fontWeight: 800, color: grn, lineHeight: 1 }}>{val}</div>
+            <div style={{ fontSize: 13, color: mut, marginTop: 6 }}>{lbl}</div>
           </div>
+        ))}
+        </div>
+      </div>
+
+      {/* ── FEATURES ─────────────────────────────────────────────────────── */}
+      <section id="features" style={{ padding: "100px 0" }}>
+        <div style={{ ...WRAP, padding: "0 48px" }}>
+        <SecTag label="Возможности" grn={grn} />
+        <h2 style={{ ...SYNE, fontSize: "clamp(28px,4vw,44px)", fontWeight: 800, letterSpacing: -1, lineHeight: 1.1, maxWidth: 520, marginBottom: 10, color: txt }}>
+          {t.features.title}
+        </h2>
+        <p style={{ fontSize: 16, color: mut, maxWidth: 420, lineHeight: 1.7, fontWeight: 300 }}>
+          {t.features.subtitle}
+        </p>
+        <div ref={featFU.ref} className={featFU.className} style={{
+          display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14, marginTop: 52,
+        }}>
+          {Object.values(t.features.items).map((item, i) => (
+            <FeatCard key={i} Icon={FEAT_ICONS[i]} title={item.title} text={item.description}
+              bg={card} border={bdr} gSoft={gSoft} grn={grn} txt={txt} mut={mut} rad={rad} shadow={shad} shadowMd={shadM} />
+          ))}
+        </div>
         </div>
       </section>
 
-      {/* Features Section */}
-      <section id="features" className="py-20 sm:py-32 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="max-w-2xl mx-auto text-center mb-16">
-            <span className="inline-block px-3 py-1 bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 text-xs font-semibold rounded-full mb-4 uppercase tracking-wider">
-              Возможности
-            </span>
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white tracking-tight mb-4">
-              {t.features.title}
-            </h2>
-            <p className="text-base sm:text-lg text-gray-600 dark:text-gray-400">
-              {t.features.subtitle}
-            </p>
-          </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <FeatureCard
-              icon={Camera}
-              title={t.features.items.aiAnalysis.title}
-              description={t.features.items.aiAnalysis.description}
-            />
-            <FeatureCard
-              icon={Target}
-              title={t.features.items.personalGoals.title}
-              description={t.features.items.personalGoals.description}
-            />
-            <FeatureCard
-              icon={BarChart3}
-              title={t.features.items.detailedStats.title}
-              description={t.features.items.detailedStats.description}
-            />
-            <FeatureCard
-              icon={Flame}
-              title={t.features.items.streaks.title}
-              description={t.features.items.streaks.description}
-            />
-            <FeatureCard
-              icon={Scale}
-              title={t.features.items.weightControl.title}
-              description={t.features.items.weightControl.description}
-            />
-            <FeatureCard
-              icon={Bell}
-              title={t.features.items.reminders.title}
-              description={t.features.items.reminders.description}
-            />
-          </div>
-        </div>
-      </section>
-
-      {/* How It Works Section */}
-      <section id="how-it-works" className="py-20 sm:py-32 px-4 sm:px-6 lg:px-8 bg-gray-50 dark:bg-gray-900/50">
-        <div className="max-w-7xl mx-auto">
-          <div className="max-w-2xl mx-auto text-center mb-16">
-            <span className="inline-block px-3 py-1 bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 text-xs font-semibold rounded-full mb-4 uppercase tracking-wider">
-              Как это работает
-            </span>
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white tracking-tight mb-4">
-              {t.howItWorks.title}
-            </h2>
-            <p className="text-base sm:text-lg text-gray-600 dark:text-gray-400">
+      {/* ── HOW IT WORKS ─────────────────────────────────────────────────── */}
+      <section id="how" style={{
+        padding: "100px 0",
+        background: bg2,
+        borderTop: `1px solid ${bdr}`, borderBottom: `1px solid ${bdr}`,
+      }}>
+        <div style={{ ...WRAP, padding: "0 48px" }}>
+        <SecTag label="Как это работает" grn={grn} />
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 72, alignItems: "center" }}>
+          {/* Steps */}
+          <div>
+            <h2 style={{ ...SYNE, fontSize: "clamp(28px,4vw,44px)", fontWeight: 800, letterSpacing: -1, lineHeight: 1.1, maxWidth: 520, marginBottom: 32, color: txt }}>
               {t.howItWorks.subtitle}
-            </p>
-          </div>
-          <div className="grid md:grid-cols-3 gap-6 lg:gap-8">
-            {[t.howItWorks.steps.step1, t.howItWorks.steps.step2, t.howItWorks.steps.step3].map(
-              (step, index) => (
-                <div
-                  key={index}
-                  className="relative bg-white dark:bg-gray-950 rounded-2xl p-8 border border-gray-200 dark:border-gray-800 hover:border-emerald-300 dark:hover:border-emerald-700 hover:shadow-xl"
-                >
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center text-white font-bold shadow-md">
-                      {step.number}
-                    </div>
-                    <div className="h-px flex-1 bg-gradient-to-r from-emerald-200 dark:from-emerald-800 to-transparent" />
-                  </div>
-                  <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-                    {step.title}
-                  </h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
-                    {step.description}
-                  </p>
-                </div>
-              )
-            )}
-          </div>
-        </div>
-      </section>
-
-      {/* Stats Section */}
-      <section className="py-16 sm:py-20 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-6xl mx-auto">
-          <div className="bg-gray-900 dark:bg-gray-900 rounded-3xl p-8 sm:p-12 lg:p-16 relative overflow-hidden border border-gray-800">
-            {/* Glow */}
-            <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl" />
-            <div className="absolute bottom-0 left-0 w-96 h-96 bg-teal-500/10 rounded-full blur-3xl" />
-
-            <div className="relative grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8">
-              {[t.stats.activeUsers, t.stats.analyzedMeals, t.stats.aiAccuracy, t.stats.rating].map(
-                (stat, index) => (
-                  <div key={index} className="text-center">
-                    <div className="text-3xl sm:text-4xl lg:text-5xl font-bold bg-gradient-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent mb-2">
-                      {stat.value}
-                    </div>
-                    <div className="text-xs sm:text-sm text-gray-400">{stat.label}</div>
-                  </div>
-                )
-              )}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Pricing Section */}
-      <section id="pricing" className="py-20 sm:py-32 px-4 sm:px-6 lg:px-8 bg-gray-50 dark:bg-gray-900/50">
-        <div className="max-w-7xl mx-auto">
-          <div className="max-w-2xl mx-auto text-center mb-16">
-            <span className="inline-block px-3 py-1 bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 text-xs font-semibold rounded-full mb-4 uppercase tracking-wider">
-              Тарифы
-            </span>
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white tracking-tight mb-4">
-              {t.pricing.title}
             </h2>
-            <p className="text-base sm:text-lg text-gray-600 dark:text-gray-400">
-              {t.pricing.subtitle}
-            </p>
-          </div>
-          <div className="grid md:grid-cols-3 gap-6 lg:gap-8">
-            {[t.pricing.plans.free, t.pricing.plans.pro, t.pricing.plans.premium].map(
-              (plan, index) => {
-                const isPopular = index === 1;
-                return (
-                  <div
-                    key={index}
-                    className={`relative rounded-2xl p-8 ${
-                      isPopular
-                        ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900 shadow-2xl ring-1 ring-gray-900 dark:ring-white scale-100 lg:scale-105 z-10'
-                        : 'bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800'
-                    }`}
-                  >
-                    {isPopular && (
-                      <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                        <span className="inline-flex items-center gap-1 px-3 py-1 bg-gradient-to-r from-emerald-500 to-teal-600 text-white text-xs font-bold rounded-full shadow-lg">
-                          <Sparkles className="w-3 h-3" />
-                          {t.pricing.popular}
-                        </span>
-                      </div>
-                    )}
-                    <div className="mb-8">
-                      <h3
-                        className={`text-lg font-semibold mb-3 ${
-                          isPopular ? '' : 'text-gray-900 dark:text-white'
-                        }`}
-                      >
-                        {plan.name}
-                      </h3>
-                      <div className="flex items-baseline gap-1">
-                        <span
-                          className={`text-5xl font-bold ${
-                            isPopular ? '' : 'text-gray-900 dark:text-white'
-                          }`}
-                        >
-                          {plan.price}
-                        </span>
-                        <span
-                          className={`text-sm ${
-                            isPopular
-                              ? 'text-gray-400 dark:text-gray-600'
-                              : 'text-gray-500 dark:text-gray-400'
-                          }`}
-                        >
-                          {plan.period}
-                        </span>
-                      </div>
-                    </div>
-                    <ul className="space-y-3 mb-8">
-                      {plan.features.map((feature, i) => (
-                        <li key={i} className="flex items-start gap-3 text-sm">
-                          <Check
-                            className={`w-5 h-5 flex-shrink-0 mt-0.5 ${
-                              isPopular
-                                ? 'text-emerald-400 dark:text-emerald-600'
-                                : 'text-emerald-500'
-                            }`}
-                          />
-                          <span
-                            className={
-                              isPopular
-                                ? 'text-gray-200 dark:text-gray-800'
-                                : 'text-gray-700 dark:text-gray-300'
-                            }
-                          >
-                            {feature}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                    <Link
-                      href="/register"
-                      className={`block text-center py-3 rounded-xl font-semibold ${
-                        isPopular
-                          ? 'bg-white dark:bg-gray-900 text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-800'
-                          : 'bg-gray-900 dark:bg-white text-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-gray-100'
-                      }`}
-                    >
-                      {plan.cta}
-                    </Link>
-                  </div>
-                );
-              }
-            )}
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="py-20 sm:py-32 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-4xl mx-auto">
-          <div className="relative bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-500 rounded-3xl p-8 sm:p-12 lg:p-16 text-center text-white overflow-hidden shadow-2xl">
-            {/* Decorative */}
-            <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl" />
-            <div className="absolute bottom-0 left-0 w-64 h-64 bg-white/10 rounded-full blur-3xl" />
-            <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff15_1px,transparent_1px),linear-gradient(to_bottom,#ffffff15_1px,transparent_1px)] bg-[size:32px_32px]" />
-
-            <div className="relative">
-              <Sparkles className="w-10 h-10 mx-auto mb-4 opacity-80" />
-              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight mb-4">
-                {t.cta.title}
-              </h2>
-              <p className="text-base sm:text-lg lg:text-xl text-white/90 mb-8 max-w-2xl mx-auto">
-                {t.cta.subtitle}
-              </p>
-              <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                <Link
-                  href="/register"
-                  className="inline-flex items-center justify-center gap-2 bg-white text-emerald-600 px-7 py-3.5 rounded-xl text-base font-semibold hover:bg-gray-50 shadow-lg"
-                >
-                  {t.cta.buttons.download}
-                  <ArrowRight className="w-4 h-4" />
-                </Link>
-                <button className="inline-flex items-center justify-center gap-2 bg-white/10 backdrop-blur-sm border border-white/30 text-white px-7 py-3.5 rounded-xl text-base font-semibold hover:bg-white/20">
-                  {t.cta.buttons.learnMore}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="bg-white dark:bg-gray-950 border-t border-gray-100 dark:border-gray-900 py-12 sm:py-16 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid md:grid-cols-4 gap-8 mb-12">
-            <div className="md:col-span-1">
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-8 h-8 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-lg flex items-center justify-center shadow-sm">
-                  <span className="text-white font-bold text-lg">B</span>
-                </div>
-                <span className="text-lg font-semibold text-gray-900 dark:text-white">
-                  {t.header.appName}
+            {Object.values(t.howItWorks.steps).map((step, i) => (
+              <div key={i} style={{
+                display: "flex", gap: 18, padding: "22px 0",
+                borderBottom: `1px solid ${bdr}`,
+                borderTop: i === 0 ? `1px solid ${bdr}` : "none",
+              }}>
+                <span style={{ ...SYNE, fontSize: 12, fontWeight: 700, color: grn, width: 22, flexShrink: 0, paddingTop: 2 }}>
+                  {step.number}
                 </span>
+                <div>
+                  <div style={{ ...SYNE, fontSize: 15, fontWeight: 700, color: txt, marginBottom: 5 }}>{step.title}</div>
+                  <div style={{ fontSize: 13, color: mut, lineHeight: 1.65, fontWeight: 300 }}>{step.description}</div>
+                </div>
               </div>
-              <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
-                {t.footer.description}
-              </p>
-            </div>
-            <div>
-              <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">
-                {t.footer.sections.product.title}
-              </h4>
-              <ul className="space-y-3">
-                <li>
-                  <a
-                    href="#features"
-                    className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-                  >
-                    {t.footer.sections.product.links.features}
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="#pricing"
-                    className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-                  >
-                    {t.footer.sections.product.links.pricing}
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="#"
-                    className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-                  >
-                    {t.footer.sections.product.links.reviews}
-                  </a>
-                </li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">
-                {t.footer.sections.company.title}
-              </h4>
-              <ul className="space-y-3">
-                <li>
-                  <a
-                    href="#"
-                    className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-                  >
-                    {t.footer.sections.company.links.about}
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="#"
-                    className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-                  >
-                    {t.footer.sections.company.links.blog}
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="#"
-                    className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-                  >
-                    {t.footer.sections.company.links.careers}
-                  </a>
-                </li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">
-                {t.footer.sections.support.title}
-              </h4>
-              <ul className="space-y-3">
-                <li>
-                  <a
-                    href="#"
-                    className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-                  >
-                    {t.footer.sections.support.links.help}
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="#"
-                    className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-                  >
-                    {t.footer.sections.support.links.contact}
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="#"
-                    className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-                  >
-                    {t.footer.sections.support.links.policy}
-                  </a>
-                </li>
-              </ul>
-            </div>
+            ))}
           </div>
-          <div className="border-t border-gray-100 dark:border-gray-900 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
-            <p className="text-sm text-gray-500 dark:text-gray-500">{t.footer.copyright}</p>
-            <div className="flex gap-6">
-              <a
-                href="#"
-                className="text-sm text-gray-500 dark:text-gray-500 hover:text-gray-900 dark:hover:text-white"
-              >
-                {t.footer.social.twitter}
-              </a>
-              <a
-                href="#"
-                className="text-sm text-gray-500 dark:text-gray-500 hover:text-gray-900 dark:hover:text-white"
-              >
-                {t.footer.social.instagram}
-              </a>
-              <a
-                href="#"
-                className="text-sm text-gray-500 dark:text-gray-500 hover:text-gray-900 dark:hover:text-white"
-              >
-                {t.footer.social.facebook}
-              </a>
+
+          {/* Visual */}
+          <div ref={visFU.ref} className={visFU.className} style={{
+            background: bg3, borderRadius: 22,
+            border: `1px solid ${bdr}`, padding: 28, boxShadow: shadM,
+          }}>
+            {/* Phone mockup */}
+            <div style={{
+              width: "100%", height: 170, borderRadius: 14,
+              background: `linear-gradient(135deg,var(--lp-green-soft),rgba(29,184,122,0.08))`,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              marginBottom: 18, position: "relative", overflow: "hidden",
+              border: `1px solid rgba(29,184,122,0.15)`,
+            }}>
+              <Salad size={64} style={{ color: grn, opacity: 0.55 }} />
+              <div style={{
+                position: "absolute", top: 0, left: 0, right: 0, height: 2,
+                background: `linear-gradient(90deg,transparent,${grn},transparent)`,
+                animation: "lp-scan 2.2s ease-in-out infinite",
+              }} />
             </div>
+            {/* Result rows */}
+            {HOW_ROWS.map(({ Icon, lbl, val }) => (
+              <div key={lbl} style={{
+                display: "flex", alignItems: "center", justifyContent: "space-between",
+                background: bg2, border: `1px solid ${bdr}`,
+                borderRadius: 10, padding: "10px 14px",
+                marginBottom: 8, boxShadow: "0 1px 4px rgba(0,0,0,0.04)",
+              }}>
+                <span style={{ fontSize: 13, color: mut, display: "flex", alignItems: "center", gap: 7 }}>
+                  <Icon size={14} style={{ color: grn }} /> {lbl}
+                </span>
+                <span style={{ ...SYNE, fontSize: 14, fontWeight: 700, color: grn }}>{val}</span>
+              </div>
+            ))}
           </div>
+        </div>
+        </div>
+      </section>
+
+      {/* ── PRICING ──────────────────────────────────────────────────────── */}
+      <section id="pricing" style={{ padding: "100px 0" }}>
+        <div style={{ ...WRAP, padding: "0 48px" }}>
+        <SecTag label="Тарифы" grn={grn} />
+        <h2 style={{ ...SYNE, fontSize: "clamp(28px,4vw,44px)", fontWeight: 800, letterSpacing: -1, lineHeight: 1.1, maxWidth: 520, marginBottom: 10, color: txt }}>
+          Выбери свой <span style={{ color: grn }}>план</span>
+        </h2>
+        <p style={{ fontSize: 16, color: mut, maxWidth: 420, lineHeight: 1.7, fontWeight: 300 }}>
+          {t.pricing.subtitle}
+        </p>
+        <div ref={priceFU.ref} className={priceFU.className} style={{
+          display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14, marginTop: 52, alignItems: "start",
+        }}>
+          {PLANS.map((plan) => {
+            const isGreen  = plan.key === "pro";
+            const isPurple = plan.key === "premium";
+            const cardBg     = isGreen ? proBg   : isPurple ? premBg   : card;
+            const cardBdr    = isGreen ? proBdr  : isPurple ? premBdr  : bdr;
+            const cardShadow = isGreen ? proShad : isPurple ? premShad : shad;
+            const pillBg  = isGreen ? gSoft : isPurple ? pSoft : bg3;
+            const pillClr = isGreen ? grn   : isPurple ? pur   : mut;
+            const pillBdr = isGreen ? "rgba(29,184,122,0.25)" : isPurple ? "rgba(124,92,252,0.2)" : bdr;
+            const checkBg  = isGreen ? gSoft : isPurple ? pSoft : bg3;
+            const checkClr = isGreen ? grn   : isPurple ? pur   : mut2;
+            const btnBg  = isGreen ? grn  : isPurple ? pur  : "transparent";
+            const btnClr = isGreen ? gTxt : isPurple ? "#fff" : txt;
+            const btnBdr = isGreen ? grn  : isPurple ? pur  : bdr;
+            const { PillIcon } = plan;
+
+            return (
+              <div key={plan.key} style={{
+                background: cardBg, border: `1.5px solid ${cardBdr}`,
+                borderRadius: rad, padding: 26,
+                boxShadow: cardShadow, transition: "all .25s",
+              }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = "translateY(-3px)"; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = ""; }}>
+                {/* Pill */}
+                <div style={{
+                  display: "inline-flex", alignItems: "center", gap: 6,
+                  fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: ".5px",
+                  padding: "4px 12px", borderRadius: 50, marginBottom: 14,
+                  background: pillBg, color: pillClr, border: `1px solid ${pillBdr}`,
+                }}>
+                  <PillIcon size={10} /> {plan.pillLabel}
+                </div>
+                {/* Plan name */}
+                <div style={{ ...SYNE, fontSize: 20, fontWeight: 800, color: txt, marginBottom: 6 }}>
+                  {plan.key === "free" ? "Free" : plan.key === "pro" ? "Pro" : "Premium"}
+                </div>
+                {/* Price */}
+                <div style={{ ...SYNE, fontSize: 40, fontWeight: 800, lineHeight: 1, color: txt, marginBottom: 4 }}>
+                  {plan.price}{" "}
+                  <span style={{ fontSize: 16, color: mut, fontWeight: 400 }}>{plan.currency}</span>
+                </div>
+                <div style={{ fontSize: 12, color: mut, marginBottom: 22 }}>{plan.period}</div>
+                {/* Features */}
+                <div style={{ display: "flex", flexDirection: "column", gap: 9, marginBottom: 24 }}>
+                  {plan.feats.map(({ ok, label }) => (
+                    <div key={label} style={{ display: "flex", alignItems: "center", gap: 9, fontSize: 13, color: ok ? txt : mut }}>
+                      <div style={{
+                        width: 18, height: 18, borderRadius: "50%",
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        flexShrink: 0,
+                        background: ok ? checkBg : bg3, color: ok ? checkClr : mut2,
+                      }}>
+                        {ok ? <Check size={10} strokeWidth={3} /> : <Minus size={10} />}
+                      </div>
+                      {label}
+                    </div>
+                  ))}
+                </div>
+                {/* CTA */}
+                <Link href={plan.href} style={{
+                  display: "block", textAlign: "center",
+                  padding: "13px 0", borderRadius: 50,
+                  fontSize: 14, fontWeight: 600, textDecoration: "none",
+                  transition: "all .2s",
+                  background: btnBg, color: btnClr,
+                  border: `1.5px solid ${btnBdr}`,
+                }}
+                  onMouseEnter={e => {
+                    const el = e.currentTarget as HTMLElement;
+                    if (isGreen)  { el.style.background = gBtn; el.style.boxShadow = `0 4px 18px ${gGlow}`; }
+                    if (isPurple) { el.style.background = "#6b4ef5"; el.style.boxShadow = "0 4px 18px rgba(124,92,252,0.3)"; }
+                    if (!isGreen && !isPurple) el.style.background = bg3;
+                  }}
+                  onMouseLeave={e => {
+                    const el = e.currentTarget as HTMLElement;
+                    el.style.background = btnBg; el.style.boxShadow = "";
+                  }}>
+                  {plan.btnLabel}
+                </Link>
+              </div>
+            );
+          })}
+        </div>
+        <p style={{ textAlign: "center", fontSize: 13, color: mut, marginTop: 24, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+          <Lock size={13} style={{ color: grn }} /> Безопасная оплата · Отмена в любое время
+        </p>
+        </div>
+      </section>
+
+      {/* ── CTA ──────────────────────────────────────────────────────────── */}
+      <div style={{ padding: "0 0 80px" }}>
+        <div style={{ ...WRAP, padding: "0 48px" }}>
+        <div ref={ctaFU.ref} className={ctaFU.className} style={{
+          background: ctaBg, border: `1px solid ${ctaBdr}`,
+          borderRadius: 28, padding: "80px 48px",
+          textAlign: "center", position: "relative", overflow: "hidden",
+        }}>
+          <div style={{
+            position: "absolute", top: -100, left: "50%", transform: "translateX(-50%)",
+            width: 600, height: 400, pointerEvents: "none",
+            background: `radial-gradient(ellipse,${gMid},transparent 70%)`,
+          }} />
+          <h2 style={{ ...SYNE, fontSize: "clamp(28px,5vw,50px)", fontWeight: 800, letterSpacing: -1.5, color: ctaTitle, marginBottom: 14 }}>
+            {t.cta.title}
+          </h2>
+          <p style={{ fontSize: 16, color: ctaSub, marginBottom: 36, fontWeight: 300 }}>
+            {t.cta.subtitle}
+          </p>
+          <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
+            <Link href="/register" style={{
+              background: ctaB1bg, color: ctaB1cl, padding: "14px 28px", borderRadius: 50,
+              fontSize: 15, fontWeight: 600, textDecoration: "none", transition: "all .2s",
+              display: "flex", alignItems: "center", gap: 8,
+            }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = "translateY(-2px)"; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = ""; }}>
+              <Smartphone size={16} /> {t.cta.buttons.download}
+            </Link>
+            <a href="#features" style={{
+              background: "transparent", color: ctaB2cl,
+              padding: "14px 28px", borderRadius: 50,
+              fontSize: 15, fontWeight: 500, textDecoration: "none",
+              border: `1px solid ${ctaObdr}`, transition: "all .2s",
+            }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = "translateY(-2px)"; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = ""; }}>
+              {t.cta.buttons.learnMore}
+            </a>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 20, marginTop: 24, flexWrap: "wrap" }}>
+            {["Бесплатно навсегда", "Без рекламы", "Отмена в любое время"].map((item) => (
+              <div key={item} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: ctaTrust }}>
+                <Check size={13} style={{ color: grn }} /> {item}
+              </div>
+            ))}
+          </div>
+        </div>
+        </div>
+      </div>
+
+      {/* ── FOOTER ───────────────────────────────────────────────────────── */}
+      <footer style={{ background: bg2, borderTop: `1px solid ${bdr}` }}>
+        <div style={{ ...WRAP, padding: "36px 48px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 16 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, ...SYNE, fontWeight: 800, fontSize: 16, color: txt }}>
+          <div style={{
+            width: 26, height: 26, borderRadius: 8, background: gSoft,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            border: `1px solid rgba(29,184,122,0.2)`,
+          }}>
+            <Camera size={13} style={{ color: grn }} />
+          </div>
+          Bite Lens
+        </div>
+        <div style={{ display: "flex", gap: 22, flexWrap: "wrap" }}>
+          {["Возможности", "Тарифы", "О нас", "Блог", "Контакты", "Политика"].map((lnk) => (
+            <a key={lnk} href="#" style={{ fontSize: 13, color: mut, textDecoration: "none", transition: "color .2s" }}
+              onMouseEnter={e => (e.currentTarget.style.color = txt)}
+              onMouseLeave={e => (e.currentTarget.style.color = mut)}>
+              {lnk}
+            </a>
+          ))}
+        </div>
+        <div style={{ fontSize: 12, color: mut2 }}>{t.footer.copyright}</div>
         </div>
       </footer>
+    </div>
+  );
+}
+
+// ── Section tag ───────────────────────────────────────────────────────────────
+function SecTag({ label, grn }: { label: string; grn: string }) {
+  return (
+    <div style={{
+      fontSize: 12, fontWeight: 600, letterSpacing: "1.5px", color: grn,
+      textTransform: "uppercase", marginBottom: 14,
+      display: "flex", alignItems: "center", gap: 8,
+    }}>
+      <span style={{ width: 18, height: 2, background: grn, borderRadius: 1, display: "inline-block" }} />
+      {label}
+    </div>
+  );
+}
+
+// ── Feature card ─────────────────────────────────────────────────────────────
+function FeatCard({
+  Icon, title, text, bg, border, gSoft, grn, txt, mut, rad, shadow, shadowMd,
+}: {
+  Icon: LucideIcon; title: string; text: string;
+  bg: string; border: string; gSoft: string; grn: string; txt: string; mut: string;
+  rad: string; shadow: string; shadowMd: string;
+}) {
+  const [hov, setHov] = useState(false);
+  return (
+    <div style={{
+      background: bg, border: `1px solid ${hov ? "rgba(29,184,122,0.2)" : border}`,
+      borderRadius: rad, padding: 26,
+      boxShadow: hov ? shadowMd : shadow,
+      transition: "all .25s",
+      transform: hov ? "translateY(-4px)" : "",
+      cursor: "default",
+    }}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}>
+      <div style={{
+        width: 48, height: 48, borderRadius: 14, background: gSoft,
+        display: "flex", alignItems: "center", justifyContent: "center",
+        marginBottom: 16,
+        border: `1px solid rgba(29,184,122,0.2)`,
+      }}>
+        <Icon size={20} style={{ color: grn }} />
+      </div>
+      <div style={{ fontFamily: "var(--font-syne),sans-serif", fontSize: 16, fontWeight: 700, color: txt, marginBottom: 7 }}>
+        {title}
+      </div>
+      <div style={{ fontSize: 13, color: mut, lineHeight: 1.7, fontWeight: 300 }}>{text}</div>
     </div>
   );
 }

@@ -25,74 +25,68 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Проверка существования пользователя
+    // Проверка существования подтвержденного пользователя
     const existingUser = await prisma.users.findUnique({
       where: { email },
     });
 
-    if (existingUser) {
+    if (existingUser && existingUser.is_email_verified) {
       return NextResponse.json({ error: "emailExists" }, { status: 400 });
     }
 
     // Хеширование пароля
     const passwordHash = await hashPassword(password);
 
-    // Создание пользователя с минимальными данными
-    const user = await prisma.users.create({
-      data: {
+    // Генерация 6-значного кода
+    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const codeExpiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 минут
+
+    // Сохраняем во временную таблицу (upsert - обновляем если уже есть)
+    await prisma.pending_registrations.upsert({
+      where: { email },
+      create: {
         id: crypto.randomUUID(),
         email,
         password_hash: passwordHash,
-        onboarding_completed: false,
+        verification_code: verificationCode,
+        code_expires_at: codeExpiresAt,
+      },
+      update: {
+        password_hash: passwordHash,
+        verification_code: verificationCode,
+        code_expires_at: codeExpiresAt,
       },
     });
 
-    // Создание токенов
-    const token = await signJWT(
-      { userId: user.id, email: user.email, isEmailVerified: false },
-      "7d",
+    // Создаем временный токен для доступа к странице верификации
+    const tempToken = await signJWT(
+      { email, isPending: true },
+      "1h", // Токен на 1 час
     );
-    const refreshToken = await signJWT(
-      { userId: user.id, email: user.email, isEmailVerified: false },
-      "30d",
-    );
 
-    // Сохранение refresh token в БД
-    await prisma.sessions.create({
-      data: {
-        id: crypto.randomUUID(),
-        user_id: user.id,
-        refresh_token: refreshToken,
-        user_agent: request.headers.get("user-agent") || undefined,
-        ip_address:
-          request.headers.get("x-forwarded-for") ||
-          request.headers.get("x-real-ip") ||
-          undefined,
-        expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
-      },
-    });
+    console.log('✅ Регистрация успешна:', email);
+    console.log('🔑 Создан tempToken для:', email);
+    console.log('📧 НОВЫЙ код верификации:', verificationCode);
+    console.log('⏰ Код действителен до:', codeExpiresAt.toLocaleString('ru-RU'));
 
-    // Создание trial-подписки на 3 дня
-    await prisma.subscriptions.create({
-      data: {
-        id: crypto.randomUUID(),
-        user_id: user.id,
-        status: "TRIAL",
-        plan_type: "FREE",
-        trial_ends_at: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
-      },
-    });
-
-    // Установка cookies
-    await setAuthCookies(token, refreshToken);
-
-    return NextResponse.json({
+    // Устанавливаем только временный токен
+    const response = NextResponse.json({
       success: true,
-      user: {
-        id: user.id,
-        email: user.email,
-      },
+      email,
+      verificationCode, // В продакшене отправлять на email
     });
+
+    response.cookies.set('tempToken', tempToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60, // 1 час
+      path: '/',
+    });
+
+    console.log('🍪 tempToken cookie установлен');
+
+    return response;
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(

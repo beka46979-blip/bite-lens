@@ -214,7 +214,7 @@ export function ProfileHeader({ initialAvatar, userName, userEmail }: ProfileHea
         {/* Avatar with Menu */}
         <div className="relative" ref={menuRef}>
           <div 
-            className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-2xl overflow-hidden ring-4 ring-emerald-100 dark:ring-emerald-900/30 cursor-pointer transition-all hover:ring-emerald-200 dark:hover:ring-emerald-800/50 hover:scale-105"
+            className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-full overflow-hidden ring-4 ring-emerald-100 dark:ring-emerald-900/30 cursor-pointer transition-all hover:ring-emerald-200 dark:hover:ring-emerald-800/50 hover:scale-105"
             onClick={handleAvatarClick}
             title={avatar ? "Управление фото" : "Загрузить фото"}
           >

@@ -7,38 +7,55 @@ import { ThemeToggle } from '@/app/components/ThemeToggle';
 
 export default async function MealHistoryPage() {
   const currentUser = await getCurrentUser();
-
-  if (!currentUser) {
-    redirect('/login');
-  }
+  if (!currentUser) redirect('/login');
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800">
+    <div style={{
+      minHeight: "100vh",
+      background: "var(--lp-bg)",
+      fontFamily: "var(--font-geist-sans), sans-serif",
+      color: "var(--lp-text)",
+    }}>
       {/* Header */}
-      <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg border-b border-emerald-100 dark:border-gray-700 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
-          <div className="flex items-center gap-4">
-            <Link
-              href="/dashboard"
-              className="p-2.5 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-xl transition-all hover:scale-110"
-            >
-              <ArrowLeft className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-            </Link>
-            <div className="flex-1">
-              <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 dark:from-emerald-400 dark:to-teal-400 bg-clip-text text-transparent">
-                История приёмов пищи
-              </h1>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Просмотрите все ваши сохранённые приёмы пищи
-              </p>
-            </div>
-            <ThemeToggle />
+      <div style={{
+        background: "var(--lp-bg2)",
+        borderBottom: "1px solid var(--lp-border)",
+        backdropFilter: "blur(20px)",
+        WebkitBackdropFilter: "blur(20px)",
+        position: "sticky", top: 0, zIndex: 50,
+      }}>
+        <div style={{
+          maxWidth: 1024, margin: "0 auto",
+          padding: "16px 24px",
+          display: "flex", alignItems: "center", gap: 16,
+        }}>
+          <Link href="/dashboard" style={{
+            display: "flex", alignItems: "center", justifyContent: "center",
+            width: 36, height: 36, borderRadius: 10,
+            background: "var(--lp-bg3)", border: "1px solid var(--lp-border)",
+            color: "var(--lp-muted)", textDecoration: "none", transition: "all .2s",
+            flexShrink: 0,
+          }}>
+            <ArrowLeft size={16} />
+          </Link>
+          <div style={{ flex: 1 }}>
+            <h1 style={{
+              fontFamily: "var(--font-syne), sans-serif",
+              fontSize: 20, fontWeight: 800,
+              color: "var(--lp-text)", margin: 0, lineHeight: 1.2,
+            }}>
+              История приёмов пищи
+            </h1>
+            <p style={{ fontSize: 13, color: "var(--lp-muted)", margin: 0 }}>
+              Все сохранённые приёмы и аналитика
+            </p>
           </div>
+          <ThemeToggle />
         </div>
       </div>
 
       {/* Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div style={{ maxWidth: 1024, margin: "0 auto", padding: "32px 24px" }}>
         <MealHistoryClient />
       </div>
     </div>

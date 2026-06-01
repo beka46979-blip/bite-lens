@@ -52,11 +52,16 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    // Expose underlying cause (e.g. ECONNREFUSED) to make debugging easier
+    const cause = error instanceof Error && error.cause
+      ? ` (cause: ${String(error.cause)})`
+      : '';
     console.error('Error creating Finik payment:', error);
     return NextResponse.json(
       {
         error: 'Failed to create payment',
-        details: error instanceof Error ? error.message : 'Unknown error',
+        details: `${message}${cause}`,
       },
       { status: 500 }
     );

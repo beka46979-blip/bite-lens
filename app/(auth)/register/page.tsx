@@ -2,49 +2,81 @@ import { getLocaleFromCookie } from '@/app/i18n/cookies';
 import { RegisterForm } from './RegisterForm';
 import { getTranslations } from '@/app/i18n';
 import Link from 'next/link';
-import { ThemeToggle } from '@/app/components/ThemeToggle';
 
 export default async function RegisterPage() {
   const locale = await getLocaleFromCookie();
   const t = getTranslations(locale, 'auth') as any;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
-      {/* Theme Toggle - Fixed Position */}
-      <div className="fixed top-4 right-4 z-50">
-        <ThemeToggle />
-      </div>
+    <div style={{
+      minHeight: "100vh",
+      background: "var(--lp-bg)",
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      justifyContent: "center",
+      padding: "24px",
+      position: "relative",
+      overflow: "hidden",
+      fontFamily: "var(--font-geist-sans), sans-serif",
+      color: "var(--lp-text)",
+    }}>
+      {/* Glow blobs */}
+      <div style={{
+        position: "absolute", top: "-15%", left: "50%", transform: "translateX(-50%)",
+        width: 700, height: 500, pointerEvents: "none", zIndex: 0,
+        background: "radial-gradient(ellipse, var(--lp-green-mid) 0%, transparent 65%)",
+      }} />
+      <div style={{
+        position: "absolute", bottom: "5%", right: "8%",
+        width: 350, height: 350, pointerEvents: "none", zIndex: 0,
+        background: "radial-gradient(ellipse, var(--lp-purple-soft) 0%, transparent 70%)",
+      }} />
 
-      <div className="w-full max-w-md">
+      <div style={{ position: "relative", zIndex: 1, width: "100%", maxWidth: 420 }}>
         {/* Logo */}
-        <Link href="/" className="flex items-center justify-center gap-2 mb-8">
-          <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center">
-            <span className="text-white font-bold text-2xl">B</span>
-          </div>
-          <span className="text-2xl font-bold text-gray-900 dark:text-white">Bite Lens</span>
+        <Link href="/" style={{
+          display: "flex", alignItems: "center", justifyContent: "center",
+          marginBottom: 32, textDecoration: "none",
+        }}>
+          <span style={{
+            fontFamily: "var(--font-syne), sans-serif",
+            fontWeight: 900, fontSize: 24, color: "var(--lp-text)",
+          }}>
+            Bite Lens
+          </span>
         </Link>
 
-        {/* Form Card */}
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+        {/* Card */}
+        <div style={{
+          background: "var(--lp-card)",
+          border: "1px solid var(--lp-border)",
+          borderRadius: "var(--lp-radius)",
+          padding: "36px",
+          boxShadow: "var(--lp-shadow-md)",
+        }}>
+          {/* Header */}
+          <div style={{ textAlign: "center", marginBottom: 28 }}>
+            <h1 style={{
+              fontFamily: "var(--font-syne), sans-serif",
+              fontSize: 26, fontWeight: 800, letterSpacing: -0.5,
+              color: "var(--lp-text)", margin: "0 0 8px",
+            }}>
               {t.register.title}
             </h1>
-            <p className="text-gray-600 dark:text-gray-400">
+            <p style={{ fontSize: 14, color: "var(--lp-muted)", fontWeight: 300, margin: 0 }}>
               {t.register.subtitle}
             </p>
           </div>
 
           <RegisterForm locale={locale} />
 
-          <div className="mt-6 text-center">
-            <p className="text-gray-600 dark:text-gray-400">
-              {t.register.haveAccount}{' '}
-              <Link href="/login" className="text-emerald-600 dark:text-emerald-400 font-semibold hover:underline">
-                {t.register.signIn}
-              </Link>
-            </p>
-          </div>
+          <p style={{ textAlign: "center", fontSize: 14, color: "var(--lp-muted)", marginTop: 20, marginBottom: 0 }}>
+            {t.register.haveAccount}{' '}
+            <Link href="/login" style={{ color: "var(--lp-green)", fontWeight: 600, textDecoration: "none" }}>
+              {t.register.signIn}
+            </Link>
+          </p>
         </div>
       </div>
     </div>

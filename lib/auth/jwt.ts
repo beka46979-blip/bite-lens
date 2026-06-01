@@ -5,17 +5,18 @@ const JWT_SECRET = new TextEncoder().encode(
 );
 
 export interface JWTPayload {
-  userId: string;
+  userId?: string;
   email: string;
   role?: string;
   isAdmin?: boolean;
   isEmailVerified?: boolean;
+  isPending?: boolean;
   iat?: number;
   exp?: number;
 }
 
 export async function signJWT(
-  payload: JWTPayload,
+  payload: Partial<JWTPayload> & { email: string },
   expiresIn: string = "7d",
 ): Promise<string> {
   const iat = Math.floor(Date.now() / 1000);
@@ -33,11 +34,12 @@ export async function verifyJWT(token: string): Promise<JWTPayload | null> {
   try {
     const { payload } = await jwtVerify(token, JWT_SECRET);
     return {
-      userId: payload.userId as string,
+      userId: payload.userId as string | undefined,
       email: payload.email as string,
       role: payload.role as string | undefined,
       isAdmin: payload.isAdmin as boolean | undefined,
       isEmailVerified: payload.isEmailVerified as boolean | undefined,
+      isPending: payload.isPending as boolean | undefined,
       iat: payload.iat,
       exp: payload.exp,
     };

@@ -32,13 +32,16 @@ export default async function proxy(request: NextRequest) {
   // Проверяем JWT-токены из куков
   const userToken = request.cookies.get("auth_token")?.value;
   const adminToken = request.cookies.get("admin_token")?.value;
+  const tempToken = request.cookies.get("tempToken")?.value; // Для pending регистраций
 
   let user = null;
   let admin = null;
+  let pendingUser = null;
 
   try {
     user = userToken ? await verifyJWT(userToken) : null;
     admin = adminToken ? await verifyJWT(adminToken) : null;
+    pendingUser = tempToken ? await verifyJWT(tempToken) : null;
   } catch {
     // Невалидный токен — считаем пользователя неавторизованным
   }
@@ -96,10 +99,11 @@ export default async function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // /verify-email — доступна только авторизованным
+  // /verify-email — доступна для авторизованных пользователей И для pending регистраций
   if (pathname.startsWith("/verify-email")) {
-    if (!user) {
-      return NextResponse.redirect(new URL("/login", request.url));
+    // Разрешаем доступ если есть либо user, либо pendingUser
+    if (!user && !pendingUser) {
+      return NextResponse.redirect(new URL("/register", request.url));
     }
     return NextResponse.next();
   }

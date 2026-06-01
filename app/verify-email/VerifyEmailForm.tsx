@@ -2,7 +2,7 @@
 
 import { useState, useRef, KeyboardEvent, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Loader2, CheckCircle } from 'lucide-react';
+import { Loader2, CheckCircle, ArrowLeft } from 'lucide-react';
 
 interface VerifyEmailFormProps {
   email: string;
@@ -171,27 +171,86 @@ export function VerifyEmailForm({ email }: VerifyEmailFormProps) {
     }
   };
 
+  const handleGoBack = async () => {
+    // Сохраняем email в localStorage для автозаполнения на странице регистрации
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('pendingEmail', email);
+    }
+    
+    try {
+      // Вызываем API для очистки tempToken
+      await fetch('/api/auth/clear-temp-token', {
+        method: 'POST',
+      });
+    } catch (err) {
+      console.error('Clear token error:', err);
+    }
+    
+    // Перенаправляем на регистрацию с очисткой кеша
+    window.location.replace('/register?t=' + Date.now());
+  };
+
   return (
-    <div className="space-y-6">
+    <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
       {error && (
-        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 px-4 py-3 rounded-lg text-sm">
+        <div style={{
+          background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.3)",
+          borderRadius: "var(--lp-radius-sm)", padding: "11px 14px",
+          fontSize: 13, color: "#f87171",
+        }}>
           {error}
         </div>
       )}
 
       {success && (
-        <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-600 dark:text-green-400 px-4 py-3 rounded-lg text-sm flex items-center gap-2">
-          <CheckCircle className="w-4 h-4" />
-          {success}
+        <div style={{
+          background: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.3)",
+          borderRadius: "var(--lp-radius-sm)", padding: "11px 14px",
+          fontSize: 13, color: "var(--lp-green)",
+          display: "flex", alignItems: "center", gap: 8,
+        }}>
+          <CheckCircle size={16} />
+          <span>{success}</span>
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Edit Button - Beautiful */}
+      <button
+        type="button"
+        onClick={handleGoBack}
+        style={{
+          width: "100%", padding: "12px 16px",
+          background: "transparent",
+          border: "1px solid var(--lp-border)",
+          borderRadius: "var(--lp-radius-sm)",
+          color: "var(--lp-text)",
+          fontSize: 14, fontWeight: 500,
+          cursor: "pointer",
+          display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+          transition: "all .2s",
+        }}
+        onMouseEnter={e => { 
+          (e.currentTarget as HTMLElement).style.background = "var(--lp-bg3)";
+          (e.currentTarget as HTMLElement).style.borderColor = "var(--lp-green)";
+        }}
+        onMouseLeave={e => { 
+          (e.currentTarget as HTMLElement).style.background = "transparent";
+          (e.currentTarget as HTMLElement).style.borderColor = "var(--lp-border)";
+        }}
+      >
+        <ArrowLeft size={16} />
+        Изменить email или пароль
+      </button>
+
+      <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 18 }}>
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 text-center">
+          <label style={{
+            display: "block", fontSize: 13, fontWeight: 500,
+            color: "var(--lp-muted)", marginBottom: 10, textAlign: "center",
+          }}>
             Введите 6-значный код
           </label>
-          <div className="flex gap-2 justify-center">
+          <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
             {code.map((digit, index) => (
               <input
                 key={index}
@@ -205,8 +264,19 @@ export function VerifyEmailForm({ email }: VerifyEmailFormProps) {
                 onChange={(e) => handleCodeChange(index, e.target.value)}
                 onKeyDown={(e) => handleKeyDown(index, e)}
                 onPaste={index === 0 ? handlePaste : undefined}
-                className="w-12 h-14 text-center text-2xl font-bold border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 dark:bg-gray-700 dark:text-white transition-all"
                 disabled={isLoading}
+                style={{
+                  width: 48, height: 56, textAlign: "center",
+                  fontSize: 24, fontWeight: 700,
+                  background: "var(--lp-bg2)",
+                  border: `2px solid ${digit ? "var(--lp-green)" : "var(--lp-border)"}`,
+                  borderRadius: "var(--lp-radius-sm)",
+                  color: "var(--lp-text)",
+                  outline: "none",
+                  transition: "border-color .15s",
+                  cursor: isLoading ? "not-allowed" : "text",
+                  opacity: isLoading ? 0.6 : 1,
+                }}
               />
             ))}
           </div>
@@ -215,24 +285,20 @@ export function VerifyEmailForm({ email }: VerifyEmailFormProps) {
         <button
           type="submit"
           disabled={isLoading || code.some(digit => digit === '')}
-          className="w-full bg-gradient-to-r from-emerald-500 to-teal-600 text-white py-3 rounded-lg font-semibold hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          style={{
+            width: "100%", padding: "14px 0",
+            background: "var(--lp-green)", color: "var(--lp-green-txt)",
+            border: "none", borderRadius: 50,
+            fontSize: 15, fontWeight: 600,
+            cursor: (isLoading || code.some(digit => digit === '')) ? "not-allowed" : "pointer",
+            opacity: (isLoading || code.some(digit => digit === '')) ? 0.7 : 1,
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+            transition: "all .2s",
+          }}
         >
           {isLoading ? (
-            <>
-              <Loader2 className="w-5 h-5 animate-spin" />
-              Проверка...
-            </>
-          ) : (
-            'Подтвердить'
-          )}
-        </button>
-
-        <button
-          type="button"
-          onClick={handleResendCode}
-          className="w-full text-emerald-600 dark:text-emerald-400 hover:underline text-sm"
-        >
-          Отправить код повторно
+            <><Loader2 size={18} className="animate-spin" /> Проверка...</>
+          ) : 'Подтвердить'}
         </button>
       </form>
     </div>

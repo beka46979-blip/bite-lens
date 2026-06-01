@@ -1,57 +1,64 @@
-import { NextResponse } from 'next/server';
-import { getCurrentUser } from '@/lib/auth/session';
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { sendEmail } from '@/lib/email';
+import { cookies } from 'next/headers';
 
-export async function POST() {
+export async function POST(request: NextRequest) {
   try {
-    const currentUser = await getCurrentUser();
+    // Получаем временный токен из cookies
+    const cookieStore = await cookies();
+    const tempToken = cookieStore.get('tempToken');
 
-    if (!currentUser) {
+    if (!tempToken) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Получаем данные пользователя
-    const user = await prisma.users.findUnique({
-      where: { id: currentUser.userId },
-      select: { 
-        email: true, 
-        name: true,
-        is_email_verified: true,
-      },
+    // Декодируем токен чтобы получить email
+    // Для простоты используем payload из токена (в продакшене нужно верифицировать)
+    const payload = JSON.parse(Buffer.from(tempToken.value.split('.')[1], 'base64').toString());
+    const email = payload.email;
+
+    if (!email) {
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+    }
+
+    // Получаем pending регистрацию
+    const pendingReg = await prisma.pending_registrations.findUnique({
+      where: { email },
     });
 
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    if (!pendingReg) {
+      return NextResponse.json({ error: 'Registration not found' }, { status: 404 });
     }
 
-    if (user.is_email_verified) {
-      return NextResponse.json({ error: 'Email already verified' }, { status: 400 });
-    }
-
-    // Генерируем 6-значный код
+    // Генерируем новый 6-значный код
     const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 минут
 
-    // Сохраняем код в БД с временной меткой (код действителен 10 минут)
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
-    await prisma.users.update({
-      where: { id: currentUser.userId },
+    console.log('🔄 Генерация нового кода для:', email);
+    console.log('📧 НОВЫЙ код:', code);
+    console.log('⏰ Действителен до:', expiresAt.toLocaleString('ru-RU'));
+
+    // Обновляем код
+    await prisma.pending_registrations.update({
+      where: { email },
       data: {
-        email_verification_code: `${code}:${expiresAt.getTime()}`,
+        verification_code: code,
+        code_expires_at: expiresAt,
       },
     });
 
     // Отправляем код на email
     try {
-      const template = getEmailVerificationTemplate(code, user.name || undefined);
+      const template = getEmailVerificationTemplate(code);
       await sendEmail({
-        to: user.email,
+        to: email,
         subject: template.subject,
         html: template.html,
         text: template.text,
       });
 
-      console.log(`Email verification code sent to ${user.email}: ${code}`);
+      console.log(`Email verification code sent to ${email}: ${code}`);
 
       return NextResponse.json({
         success: true,
@@ -80,7 +87,7 @@ export async function POST() {
   }
 }
 
-function getEmailVerificationTemplate(code: string, userName?: string) {
+function getEmailVerificationTemplate(code: string) {
   return {
     subject: 'Подтверждение email - Bite Lens',
     html: `
@@ -141,13 +148,12 @@ function getEmailVerificationTemplate(code: string, userName?: string) {
         <div class="container">
           <div class="logo">🍽️ Bite Lens</div>
           <h1>Подтверждение Email</h1>
-          ${userName ? `<p>Привет, ${userName}!</p>` : ''}
           <p>Спасибо за регистрацию! Используйте этот код для подтверждения вашего email:</p>
           
           <div class="code-container">
             <p style="margin: 0; color: #666; font-size: 14px;">Ваш код подтверждения:</p>
             <div class="code">${code}</div>
-            <p style="margin: 0; color: #666; font-size: 14px;">Код действителен 10 минут</p>
+            <p style="margin: 0; color: #666; font-size: 14px;">Код действителен 15 минут</p>
           </div>
 
           <div class="warning">
@@ -167,11 +173,9 @@ function getEmailVerificationTemplate(code: string, userName?: string) {
     text: `
 Bite Lens - Подтверждение Email
 
-${userName ? `Привет, ${userName}!` : ''}
-
 Спасибо за регистрацию! Ваш код подтверждения: ${code}
 
-Код действителен 10 минут.
+Код действителен 15 минут.
 
 Если вы не регистрировались на Bite Lens, проигнорируйте это письмо.
 

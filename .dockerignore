@@ -1,0 +1,67 @@
+# Зависимости
+node_modules
+npm-debug.log
+yarn-error.log
+# package-lock.json - нужен для Docker сборки
+yarn.lock
+
+# Next.js
+.next
+out
+
+# Переменные окружения
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.timeweb.template
+
+# Git
+.git
+.gitignore
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# Тесты
+coverage
+.nyc_output
+
+# Документация
+*.md
+!README.md
+
+# Логи
+logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Временные файлы
+*.tmp
+*.temp
+
+# Скрипты миграций (не нужны в production)
+add-*.mjs
+add-*.sql
+test-*.mjs
+
+# Утилиты для разработки
+generate-jwt-secret.js
+check-env.js
+docker-commands.md
+
+# Docker файлы
+Dockerfile.simple
+Dockerfile.multi-stage
+.dockerignore
+
+# CI/CD
+.github

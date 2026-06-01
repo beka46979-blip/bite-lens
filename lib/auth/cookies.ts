@@ -40,3 +40,13 @@ export async function clearAuthCookies() {
   cookieStore.delete(TOKEN_COOKIE_NAME);
   cookieStore.delete(REFRESH_TOKEN_COOKIE_NAME);
 }
+
+export async function getTempToken(): Promise<string | undefined> {
+  const cookieStore = await cookies();
+  return cookieStore.get('tempToken')?.value;
+}
+
+export async function clearTempToken() {
+  const cookieStore = await cookies();
+  cookieStore.delete('tempToken');
+}

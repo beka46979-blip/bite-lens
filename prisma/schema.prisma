@@ -315,6 +315,18 @@ model weight_logs {
   @@index([log_date])
 }
 
+model pending_registrations {
+  id                String   @id @db.Uuid
+  email             String   @unique @db.VarChar(255)
+  password_hash     String   @db.VarChar(255)
+  verification_code String   @db.VarChar(10)
+  code_expires_at   DateTime @db.Timestamp(6)
+  created_at        DateTime @default(now()) @db.Timestamp(6)
+
+  @@index([email])
+  @@index([code_expires_at])
+}
+
 enum AILogStatus {
   SUCCESS
   FAILED

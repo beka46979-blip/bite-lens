@@ -1,8 +1,12 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Включаем standalone режим для Docker
+  output: 'standalone',
+  
   // Prevent Turbopack from bundling native Node.js packages used by Finik
   serverExternalPackages: ['@mancho.devs/authorizer', 'node-jose'],
+  
   images: {
     remotePatterns: [
       {

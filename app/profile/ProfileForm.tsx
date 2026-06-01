@@ -56,45 +56,71 @@ function Section({
   title,
   description,
   icon: Icon,
-  iconColor = 'text-emerald-500',
-  iconBg = 'bg-emerald-50 dark:bg-emerald-950/30',
+  iconColor,
+  iconBg,
   extra,
   children,
 }: {
   number: number;
   title: string;
   description?: string;
-  icon: React.ComponentType<{ className?: string }>;
+  icon: React.ComponentType<{ style?: React.CSSProperties }>;
   iconColor?: string;
   iconBg?: string;
   extra?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
-    <section className="border-b border-gray-200 dark:border-gray-800 last:border-b-0 py-8 first:pt-0 last:pb-0">
+    <section className="profile-section py-8 first:pt-0 last:pb-0">
       <div className="grid lg:grid-cols-3 gap-6">
         <div className="lg:col-span-1 lg:sticky lg:top-24 lg:self-start">
-          <div className="flex items-center gap-3 mb-2">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
             <div
-              className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${iconBg}`}
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: 12,
+                background: iconBg || 'var(--lp-bg2)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+              }}
             >
-              <Icon className={`w-5 h-5 ${iconColor}`} />
+              <Icon style={{ width: 20, height: 20, color: iconColor || 'var(--lp-green)' }} />
             </div>
-            <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <span className="inline-flex items-center justify-center w-5 h-5 rounded bg-gray-100 dark:bg-gray-800 text-[10px] font-semibold text-gray-700 dark:text-gray-300">
+            <div style={{ minWidth: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: 20,
+                    height: 20,
+                    borderRadius: 4,
+                    background: 'var(--lp-bg2)',
+                    border: '1px solid var(--lp-border)',
+                    color: 'var(--lp-muted)',
+                    fontSize: '10px',
+                    fontWeight: 600,
+                    flexShrink: 0,
+                  }}
+                >
                   {number}
                 </span>
-                <h3 className="text-base font-semibold text-gray-900 dark:text-white">{title}</h3>
+                <h3 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--lp-text)' }}>
+                  {title}
+                </h3>
               </div>
             </div>
           </div>
           {description && (
-            <p className="text-sm text-gray-500 dark:text-gray-400 lg:pr-8">
+            <p style={{ fontSize: '0.875rem', color: 'var(--lp-muted)', paddingRight: '1rem' }}>
               {description}
             </p>
           )}
-          {extra && <div className="mt-4">{extra}</div>}
+          {extra && <div style={{ marginTop: 16 }}>{extra}</div>}
         </div>
         <div className="lg:col-span-2 space-y-5">{children}</div>
       </div>
@@ -102,32 +128,37 @@ function Section({
   );
 }
 
-// Tip card (decorative)
+// Tip card
 function TipCard({
   icon: Icon,
   title,
   description,
   color = 'emerald',
 }: {
-  icon: React.ComponentType<{ className?: string }>;
+  icon: React.ComponentType<{ style?: React.CSSProperties }>;
   title: string;
   description: string;
   color?: 'emerald' | 'blue' | 'orange' | 'purple';
 }) {
-  const colors = {
-    emerald: 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-900/40 text-emerald-600 dark:text-emerald-400',
-    blue: 'bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-900/40 text-blue-600 dark:text-blue-400',
-    orange: 'bg-orange-50 dark:bg-orange-950/30 border-orange-200 dark:border-orange-900/40 text-orange-600 dark:text-orange-400',
-    purple: 'bg-purple-50 dark:bg-purple-950/30 border-purple-200 dark:border-purple-900/40 text-purple-600 dark:text-purple-400',
+  const colorMap: Record<string, { bg: string; border: string; text: string }> = {
+    emerald: { bg: 'rgba(29,184,122,0.08)',   border: '1px solid rgba(29,184,122,0.25)',  text: 'var(--lp-green)' },
+    blue:    { bg: 'rgba(59,130,246,0.08)',    border: '1px solid rgba(59,130,246,0.25)',  text: '#60a5fa' },
+    orange:  { bg: 'rgba(249,115,22,0.08)',    border: '1px solid rgba(249,115,22,0.25)',  text: '#fb923c' },
+    purple:  { bg: 'rgba(168,85,247,0.08)',    border: '1px solid rgba(168,85,247,0.25)',  text: '#c084fc' },
   };
+  const c = colorMap[color];
 
   return (
-    <div className={`p-4 rounded-xl border ${colors[color]}`}>
-      <div className="flex items-start gap-3">
-        <Icon className="w-4 h-4 flex-shrink-0 mt-0.5" />
-        <div className="min-w-0">
-          <p className="text-xs font-semibold mb-1">{title}</p>
-          <p className="text-xs leading-relaxed opacity-80">{description}</p>
+    <div style={{ padding: 16, borderRadius: 12, background: c.bg, border: c.border }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+        <Icon style={{ width: 16, height: 16, color: c.text, flexShrink: 0, marginTop: 2 }} />
+        <div style={{ minWidth: 0 }}>
+          <p style={{ fontSize: '0.75rem', fontWeight: 600, color: c.text, marginBottom: 4 }}>
+            {title}
+          </p>
+          <p style={{ fontSize: '0.75rem', lineHeight: 1.5, color: 'var(--lp-muted)' }}>
+            {description}
+          </p>
         </div>
       </div>
     </div>
@@ -148,18 +179,27 @@ function Field({
 }) {
   return (
     <div>
-      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+      <label
+        style={{
+          display: 'block',
+          fontSize: '0.875rem',
+          fontWeight: 500,
+          color: 'var(--lp-muted)',
+          marginBottom: 8,
+        }}
+      >
         {label}
-        {required && <span className="text-red-500 ml-1">*</span>}
+        {required && <span style={{ color: '#f87171', marginLeft: 4 }}>*</span>}
       </label>
       {children}
-      {hint && <p className="text-xs text-gray-500 dark:text-gray-400 mt-1.5">{hint}</p>}
+      {hint && (
+        <p style={{ fontSize: '0.75rem', color: 'var(--lp-muted)', marginTop: 6 }}>{hint}</p>
+      )}
     </div>
   );
 }
 
-const inputClass =
-  'w-full px-4 py-2.5 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white text-sm placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-gray-900 dark:focus:border-white focus:ring-2 focus:ring-gray-900/10 dark:focus:ring-white/10 outline-none';
+const inputClass = 'w-full px-4 py-2.5 rounded-lg text-sm lp-input';
 
 export function ProfileForm({ user, locale }: ProfileFormProps) {
   const router = useRouter();
@@ -314,9 +354,22 @@ export function ProfileForm({ user, locale }: ProfileFormProps) {
 
       <form onSubmit={handleSubmit}>
         {error && (
-          <div className="mb-6 flex items-start gap-3 p-4 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 rounded-xl">
-            <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
-            <p className="text-sm text-red-800 dark:text-red-300">{error}</p>
+          <div
+            style={{
+              marginBottom: 24,
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: 12,
+              padding: 16,
+              background: 'rgba(239,68,68,0.1)',
+              border: '1px solid rgba(239,68,68,0.3)',
+              borderRadius: 12,
+            }}
+          >
+            <AlertCircle
+              style={{ width: 20, height: 20, color: '#f87171', flexShrink: 0, marginTop: 2 }}
+            />
+            <p style={{ fontSize: '0.875rem', color: '#f87171' }}>{error}</p>
           </div>
         )}
 
@@ -326,8 +379,8 @@ export function ProfileForm({ user, locale }: ProfileFormProps) {
           title="Личная информация"
           description="Основные данные, которые помогут точнее рассчитать дневную норму калорий"
           icon={User}
-          iconColor="text-blue-500"
-          iconBg="bg-blue-50 dark:bg-blue-950/30"
+          iconColor="#60a5fa"
+          iconBg="rgba(59,130,246,0.12)"
           extra={
             <TipCard
               icon={Calendar}
@@ -349,11 +402,11 @@ export function ProfileForm({ user, locale }: ProfileFormProps) {
           </Field>
 
           <Field label="Пол" required>
-            <div className="grid grid-cols-3 gap-2">
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
               {[
-                { value: 'MALE', label: 'Мужской', icon: User, color: 'text-blue-500' },
-                { value: 'FEMALE', label: 'Женский', icon: UserCircle2, color: 'text-pink-500' },
-                { value: 'OTHER', label: 'Другой', icon: Users, color: 'text-purple-500' },
+                { value: 'MALE',   label: 'Мужской', icon: User,        color: '#60a5fa' },
+                { value: 'FEMALE', label: 'Женский',  icon: UserCircle2, color: '#f472b6' },
+                { value: 'OTHER',  label: 'Другой',   icon: Users,       color: '#c084fc' },
               ].map((option) => {
                 const Icon = option.icon;
                 const isActive = formData.gender === option.value;
@@ -362,19 +415,37 @@ export function ProfileForm({ user, locale }: ProfileFormProps) {
                     key={option.value}
                     type="button"
                     onClick={() => setFormData({ ...formData, gender: option.value as any })}
-                    className={`relative px-3 py-3 rounded-lg border text-center ${
-                      isActive
-                        ? 'border-gray-900 dark:border-white bg-gray-50 dark:bg-gray-800'
-                        : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
-                    }`}
+                    style={{
+                      position: 'relative',
+                      padding: '12px 8px',
+                      borderRadius: 8,
+                      textAlign: 'center',
+                      border: `1px solid ${isActive ? 'var(--lp-green)' : 'var(--lp-border)'}`,
+                      background: isActive ? 'var(--lp-green-soft)' : 'var(--lp-bg2)',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s',
+                    }}
                   >
                     {isActive && (
-                      <div className="absolute top-1.5 right-1.5 w-4 h-4 bg-gray-900 dark:bg-white rounded-full flex items-center justify-center">
-                        <Check className="w-2.5 h-2.5 text-white dark:text-gray-900" />
+                      <div
+                        style={{
+                          position: 'absolute',
+                          top: 6,
+                          right: 6,
+                          width: 16,
+                          height: 16,
+                          borderRadius: '50%',
+                          background: 'var(--lp-green)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        <Check style={{ width: 10, height: 10, color: '#fff' }} />
                       </div>
                     )}
-                    <Icon className={`w-5 h-5 mx-auto mb-1 ${option.color}`} />
-                    <div className="text-xs font-medium text-gray-900 dark:text-white">
+                    <Icon style={{ width: 20, height: 20, margin: '0 auto 4px', color: option.color }} />
+                    <div style={{ fontSize: '0.75rem', fontWeight: 500, color: 'var(--lp-text)' }}>
                       {option.label}
                     </div>
                   </button>
@@ -383,11 +454,11 @@ export function ProfileForm({ user, locale }: ProfileFormProps) {
             </div>
           </Field>
 
-          <Field label="Дата рождения" required hint={`Год: 1900 – ${new Date().getFullYear()}`}>
+          <Field label="Дата рождения" required>
             <div className="grid grid-cols-3 gap-2">
               <CustomSelect
                 value={formData.birthDay}
-                onChange={(value) => setFormData({ ...formData, birthDay: value })}
+                onChange={(v) => setFormData({ ...formData, birthDay: v })}
                 options={[
                   { value: '', label: 'День' },
                   ...Array.from({ length: 31 }, (_, i) => ({
@@ -397,25 +468,27 @@ export function ProfileForm({ user, locale }: ProfileFormProps) {
                 ]}
                 placeholder="День"
                 label="День"
-                maxVisibleItems={3}
+                maxVisibleItems={5}
+                inputType="number"
+                max={31}
               />
               <CustomSelect
                 value={formData.birthMonth}
-                onChange={(value) => setFormData({ ...formData, birthMonth: value })}
+                onChange={(v) => setFormData({ ...formData, birthMonth: v })}
                 options={[
                   { value: '', label: 'Месяц' },
-                  ...['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'].map((month, index) => ({
-                    value: String(index + 1),
-                    label: month,
+                  ...['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'].map((m, i) => ({
+                    value: String(i + 1),
+                    label: m,
                   })),
                 ]}
                 placeholder="Месяц"
                 label="Месяц"
-                maxVisibleItems={3}
+                maxVisibleItems={5}
               />
               <CustomSelect
                 value={formData.birthYear}
-                onChange={(value) => setFormData({ ...formData, birthYear: value })}
+                onChange={(v) => setFormData({ ...formData, birthYear: v })}
                 options={[
                   { value: '', label: 'Год' },
                   ...Array.from({ length: new Date().getFullYear() - 1900 + 1 }, (_, i) => {
@@ -437,8 +510,8 @@ export function ProfileForm({ user, locale }: ProfileFormProps) {
           title="Физические параметры"
           description="Используются для расчёта BMR (базального метаболизма) и дневной нормы калорий"
           icon={Activity}
-          iconColor="text-purple-500"
-          iconBg="bg-purple-50 dark:bg-purple-950/30"
+          iconColor="#c084fc"
+          iconBg="rgba(168,85,247,0.12)"
           extra={
             <TipCard
               icon={Target}
@@ -450,7 +523,14 @@ export function ProfileForm({ user, locale }: ProfileFormProps) {
         >
           {/* Рост */}
           <Field label="Рост" required hint="Прокрутите колёсико или используйте стрелки. Диапазон: 100 – 250 см">
-            <div className="bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+            <div
+              style={{
+                background: 'var(--lp-bg2)',
+                border: '1px solid var(--lp-border)',
+                borderRadius: 12,
+                padding: 16,
+              }}
+            >
               <WheelPicker
                 min={100}
                 max={250}
@@ -461,10 +541,17 @@ export function ProfileForm({ user, locale }: ProfileFormProps) {
             </div>
           </Field>
 
-          {/* Текущий и целевой вес — двумя колёсиками рядом */}
+          {/* Текущий и целевой вес */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Field label="Текущий вес" required hint="30 – 300 кг">
-              <div className="bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+              <div
+                style={{
+                  background: 'var(--lp-bg2)',
+                  border: '1px solid var(--lp-border)',
+                  borderRadius: 12,
+                  padding: 16,
+                }}
+              >
                 <WheelPicker
                   min={30}
                   max={300}
@@ -476,7 +563,14 @@ export function ProfileForm({ user, locale }: ProfileFormProps) {
             </Field>
 
             <Field label="Целевой вес" required hint="К чему вы стремитесь">
-              <div className="bg-gray-50 dark:bg-gray-800 rounded-xl border border-emerald-200 dark:border-emerald-900/40 p-4">
+              <div
+                style={{
+                  background: 'var(--lp-bg2)',
+                  border: '1px solid var(--lp-green-mid)',
+                  borderRadius: 12,
+                  padding: 16,
+                }}
+              >
                 <WheelPicker
                   min={30}
                   max={300}
@@ -491,34 +585,52 @@ export function ProfileForm({ user, locale }: ProfileFormProps) {
           {/* Goal indicator */}
           {goalDirection && (
             <div
-              className={`flex items-center gap-3 p-4 rounded-xl border ${
-                goalDirection === 'lose'
-                  ? 'bg-orange-50 dark:bg-orange-950/20 border-orange-200 dark:border-orange-900/40'
-                  : goalDirection === 'gain'
-                  ? 'bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-900/40'
-                  : 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700'
-              }`}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 12,
+                padding: 16,
+                borderRadius: 12,
+                background:
+                  goalDirection === 'lose' ? 'rgba(249,115,22,0.08)'
+                  : goalDirection === 'gain' ? 'rgba(59,130,246,0.08)'
+                  : 'var(--lp-bg2)',
+                border: `1px solid ${
+                  goalDirection === 'lose' ? 'rgba(249,115,22,0.25)'
+                  : goalDirection === 'gain' ? 'rgba(59,130,246,0.25)'
+                  : 'var(--lp-border)'}`,
+              }}
             >
               <div
-                className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                  goalDirection === 'lose'
-                    ? 'bg-orange-100 dark:bg-orange-900/40 text-orange-600 dark:text-orange-400'
-                    : goalDirection === 'gain'
-                    ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400'
-                    : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
-                }`}
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 8,
+                  flexShrink: 0,
+                  background:
+                    goalDirection === 'lose' ? 'rgba(249,115,22,0.15)'
+                    : goalDirection === 'gain' ? 'rgba(59,130,246,0.15)'
+                    : 'var(--lp-bg3)',
+                  color:
+                    goalDirection === 'lose' ? '#fb923c'
+                    : goalDirection === 'gain' ? '#60a5fa'
+                    : 'var(--lp-muted)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
               >
                 {goalDirection === 'lose' ? (
-                  <TrendingDown className="w-4 h-4" />
+                  <TrendingDown style={{ width: 16, height: 16 }} />
                 ) : goalDirection === 'gain' ? (
-                  <TrendingUp className="w-4 h-4" />
+                  <TrendingUp style={{ width: 16, height: 16 }} />
                 ) : (
-                  <Minus className="w-4 h-4" />
+                  <Minus style={{ width: 16, height: 16 }} />
                 )}
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs text-gray-500 dark:text-gray-400">Расчёт цели</p>
-                <p className="text-sm font-semibold text-gray-900 dark:text-white">
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{ fontSize: '0.75rem', color: 'var(--lp-muted)' }}>Расчёт цели</p>
+                <p style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--lp-text)' }}>
                   {goalDirection === 'lose' && `Сбросить ${weightDiff.toFixed(1)} кг`}
                   {goalDirection === 'gain' && `Набрать ${weightDiff.toFixed(1)} кг`}
                   {goalDirection === 'maintain' && 'Поддержание текущего веса'}
@@ -534,8 +646,8 @@ export function ProfileForm({ user, locale }: ProfileFormProps) {
           title="Активность"
           description="Уровень повседневной активности влияет на дневную норму калорий"
           icon={Flame}
-          iconColor="text-orange-500"
-          iconBg="bg-orange-50 dark:bg-orange-950/30"
+          iconColor="#fb923c"
+          iconBg="rgba(249,115,22,0.12)"
           extra={
             <TipCard
               icon={Dumbbell}
@@ -546,43 +658,13 @@ export function ProfileForm({ user, locale }: ProfileFormProps) {
           }
         >
           <Field label="Уровень активности">
-            <div className="space-y-2">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {[
-                {
-                  value: 1,
-                  label: 'Минимальная',
-                  desc: 'Сидячий образ жизни, мало движения',
-                  icon: Armchair,
-                  color: 'text-gray-500',
-                },
-                {
-                  value: 2,
-                  label: 'Низкая',
-                  desc: 'Лёгкие упражнения 1-3 раза в неделю',
-                  icon: PersonStanding,
-                  color: 'text-blue-500',
-                },
-                {
-                  value: 3,
-                  label: 'Средняя',
-                  desc: 'Умеренные тренировки 3-5 раз в неделю',
-                  icon: Footprints,
-                  color: 'text-emerald-500',
-                },
-                {
-                  value: 4,
-                  label: 'Высокая',
-                  desc: 'Интенсивные тренировки 6-7 раз в неделю',
-                  icon: Dumbbell,
-                  color: 'text-orange-500',
-                },
-                {
-                  value: 5,
-                  label: 'Очень высокая',
-                  desc: 'Ежедневные интенсивные тренировки',
-                  icon: Flame,
-                  color: 'text-red-500',
-                },
+                { value: 1, label: 'Минимальная',    desc: 'Сидячий образ жизни, мало движения',         icon: Armchair,       color: 'var(--lp-muted)' },
+                { value: 2, label: 'Низкая',          desc: 'Лёгкие упражнения 1-3 раза в неделю',        icon: PersonStanding, color: '#60a5fa' },
+                { value: 3, label: 'Средняя',         desc: 'Умеренные тренировки 3-5 раз в неделю',      icon: Footprints,     color: 'var(--lp-green)' },
+                { value: 4, label: 'Высокая',         desc: 'Интенсивные тренировки 6-7 раз в неделю',    icon: Dumbbell,       color: '#fb923c' },
+                { value: 5, label: 'Очень высокая',   desc: 'Ежедневные интенсивные тренировки',          icon: Flame,          color: '#f87171' },
               ].map((option) => {
                 const Icon = option.icon;
                 const isActive = formData.activityLevel === option.value;
@@ -591,35 +673,64 @@ export function ProfileForm({ user, locale }: ProfileFormProps) {
                     key={option.value}
                     type="button"
                     onClick={() => setFormData({ ...formData, activityLevel: option.value })}
-                    className={`w-full text-left flex items-center gap-3 px-4 py-3 rounded-lg border ${
-                      isActive
-                        ? 'border-gray-900 dark:border-white bg-gray-50 dark:bg-gray-800'
-                        : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
-                    }`}
+                    style={{
+                      width: '100%',
+                      textAlign: 'left',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 12,
+                      padding: '12px 16px',
+                      borderRadius: 8,
+                      border: `1px solid ${isActive ? 'var(--lp-green)' : 'var(--lp-border)'}`,
+                      background: isActive ? 'var(--lp-green-soft)' : 'var(--lp-bg2)',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s',
+                    }}
                   >
                     <div
-                      className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                        isActive ? 'bg-white dark:bg-gray-900' : 'bg-gray-100 dark:bg-gray-700'
-                      }`}
+                      style={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: 8,
+                        flexShrink: 0,
+                        background: isActive ? 'rgba(29,184,122,0.2)' : 'var(--lp-bg3)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
                     >
-                      <Icon className={`w-4 h-4 ${option.color}`} />
+                      <Icon style={{ width: 16, height: 16, color: option.color }} />
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm font-semibold text-gray-900 dark:text-white">
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--lp-text)' }}>
                         {option.label}
                       </div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                      <div
+                        style={{
+                          fontSize: '0.75rem',
+                          color: 'var(--lp-muted)',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
                         {option.desc}
                       </div>
                     </div>
                     <div
-                      className={`w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 ${
-                        isActive
-                          ? 'bg-gray-900 dark:bg-white'
-                          : 'border-2 border-gray-300 dark:border-gray-600'
-                      }`}
+                      style={{
+                        width: 16,
+                        height: 16,
+                        borderRadius: '50%',
+                        flexShrink: 0,
+                        background: isActive ? 'var(--lp-green)' : 'transparent',
+                        border: isActive ? 'none' : '2px solid var(--lp-border)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
                     >
-                      {isActive && <Check className="w-2.5 h-2.5 text-white dark:text-gray-900" />}
+                      {isActive && <Check style={{ width: 10, height: 10, color: '#fff' }} />}
                     </div>
                   </button>
                 );
@@ -631,8 +742,19 @@ export function ProfileForm({ user, locale }: ProfileFormProps) {
             label="Тренировок в неделю"
             hint="0 – 7. Влияет на расчёт дневной нормы."
           >
-            <div className="relative">
-              <Dumbbell className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+            <div style={{ position: 'relative' }}>
+              <Dumbbell
+                style={{
+                  position: 'absolute',
+                  left: 12,
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  width: 16,
+                  height: 16,
+                  color: 'var(--lp-muted)',
+                  pointerEvents: 'none',
+                }}
+              />
               <input
                 type="number"
                 min="0"
@@ -657,8 +779,8 @@ export function ProfileForm({ user, locale }: ProfileFormProps) {
           title="Цели"
           description="Что вы хотите достичь? Это влияет на план питания и рекомендации"
           icon={Target}
-          iconColor="text-emerald-500"
-          iconBg="bg-emerald-50 dark:bg-emerald-950/30"
+          iconColor="var(--lp-green)"
+          iconBg="var(--lp-green-soft)"
           extra={
             <TipCard
               icon={TrendingUp}
@@ -669,29 +791,11 @@ export function ProfileForm({ user, locale }: ProfileFormProps) {
           }
         >
           <Field label="Ваша цель">
-            <div className="space-y-2">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {[
-                {
-                  value: 'LOSE_WEIGHT',
-                  label: 'Похудение',
-                  desc: 'Снижение веса и жировой массы',
-                  icon: TrendingDown,
-                  color: 'text-orange-500',
-                },
-                {
-                  value: 'GAIN_WEIGHT',
-                  label: 'Набор массы',
-                  desc: 'Увеличение веса и мышечной массы',
-                  icon: TrendingUp,
-                  color: 'text-blue-500',
-                },
-                {
-                  value: 'MAINTAIN_WEIGHT',
-                  label: 'Поддержание',
-                  desc: 'Сохранение текущего веса и формы',
-                  icon: Minus,
-                  color: 'text-emerald-500',
-                },
+                { value: 'LOSE_WEIGHT',     label: 'Похудение',    desc: 'Снижение веса и жировой массы',      icon: TrendingDown, color: '#fb923c' },
+                { value: 'GAIN_WEIGHT',     label: 'Набор массы',  desc: 'Увеличение веса и мышечной массы',   icon: TrendingUp,   color: '#60a5fa' },
+                { value: 'MAINTAIN_WEIGHT', label: 'Поддержание',  desc: 'Сохранение текущего веса и формы',   icon: Minus,        color: 'var(--lp-green)' },
               ].map((option) => {
                 const Icon = option.icon;
                 const isActive = formData.goalType === option.value;
@@ -700,35 +804,64 @@ export function ProfileForm({ user, locale }: ProfileFormProps) {
                     key={option.value}
                     type="button"
                     onClick={() => setFormData({ ...formData, goalType: option.value as any })}
-                    className={`w-full text-left flex items-center gap-3 px-4 py-3 rounded-lg border ${
-                      isActive
-                        ? 'border-gray-900 dark:border-white bg-gray-50 dark:bg-gray-800'
-                        : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
-                    }`}
+                    style={{
+                      width: '100%',
+                      textAlign: 'left',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 12,
+                      padding: '12px 16px',
+                      borderRadius: 8,
+                      border: `1px solid ${isActive ? 'var(--lp-green)' : 'var(--lp-border)'}`,
+                      background: isActive ? 'var(--lp-green-soft)' : 'var(--lp-bg2)',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s',
+                    }}
                   >
                     <div
-                      className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                        isActive ? 'bg-white dark:bg-gray-900' : 'bg-gray-100 dark:bg-gray-700'
-                      }`}
+                      style={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: 8,
+                        flexShrink: 0,
+                        background: isActive ? 'rgba(29,184,122,0.2)' : 'var(--lp-bg3)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
                     >
-                      <Icon className={`w-4 h-4 ${option.color}`} />
+                      <Icon style={{ width: 16, height: 16, color: option.color }} />
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm font-semibold text-gray-900 dark:text-white">
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--lp-text)' }}>
                         {option.label}
                       </div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                      <div
+                        style={{
+                          fontSize: '0.75rem',
+                          color: 'var(--lp-muted)',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
                         {option.desc}
                       </div>
                     </div>
                     <div
-                      className={`w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 ${
-                        isActive
-                          ? 'bg-gray-900 dark:bg-white'
-                          : 'border-2 border-gray-300 dark:border-gray-600'
-                      }`}
+                      style={{
+                        width: 16,
+                        height: 16,
+                        borderRadius: '50%',
+                        flexShrink: 0,
+                        background: isActive ? 'var(--lp-green)' : 'transparent',
+                        border: isActive ? 'none' : '2px solid var(--lp-border)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
                     >
-                      {isActive && <Check className="w-2.5 h-2.5 text-white dark:text-gray-900" />}
+                      {isActive && <Check style={{ width: 10, height: 10, color: '#fff' }} />}
                     </div>
                   </button>
                 );
@@ -740,8 +873,20 @@ export function ProfileForm({ user, locale }: ProfileFormProps) {
             label="Профессия / род деятельности"
             hint="Учитывается в общем расчёте активности"
           >
-            <div className="relative">
-              <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none z-10" />
+            <div style={{ position: 'relative' }}>
+              <Briefcase
+                style={{
+                  position: 'absolute',
+                  left: 12,
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  width: 16,
+                  height: 16,
+                  color: 'var(--lp-muted)',
+                  pointerEvents: 'none',
+                  zIndex: 10,
+                }}
+              />
               <select
                 value={formData.professionId}
                 onChange={(e) => setFormData({ ...formData, professionId: e.target.value })}
@@ -755,7 +900,16 @@ export function ProfileForm({ user, locale }: ProfileFormProps) {
                 <option value="very_active">Очень активная (строитель, грузчик)</option>
               </select>
               <svg
-                className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none"
+                style={{
+                  position: 'absolute',
+                  right: 12,
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  width: 16,
+                  height: 16,
+                  color: 'var(--lp-muted)',
+                  pointerEvents: 'none',
+                }}
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -767,19 +921,54 @@ export function ProfileForm({ user, locale }: ProfileFormProps) {
         </Section>
 
         {/* Sticky Submit Bar */}
-        <div className="sticky bottom-0 -mx-5 sm:-mx-8 mt-8 px-5 sm:px-8 py-4 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 flex items-center justify-end gap-3">
+        <div
+          style={{
+            position: 'sticky',
+            bottom: 0,
+            margin: '32px -32px 0',
+            padding: '16px 32px',
+            background: 'var(--lp-bg)',
+            borderTop: '1px solid var(--lp-border)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'flex-end',
+            gap: 12,
+          }}
+        >
           <button
             type="button"
             onClick={() => router.push('/dashboard')}
             disabled={isLoading}
-            className="px-5 py-2.5 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg disabled:opacity-50"
+            style={{
+              padding: '10px 20px',
+              borderRadius: 8,
+              fontSize: '0.875rem',
+              fontWeight: 600,
+              color: 'var(--lp-muted)',
+              background: 'transparent',
+              border: 'none',
+              cursor: 'pointer',
+            }}
           >
             Отмена
           </button>
           <button
             type="submit"
             disabled={isLoading}
-            className="inline-flex items-center gap-2 px-5 py-2.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg text-sm font-semibold hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 shadow-sm"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 8,
+              padding: '10px 20px',
+              background: 'var(--lp-green)',
+              color: '#fff',
+              borderRadius: 8,
+              fontSize: '0.875rem',
+              fontWeight: 600,
+              border: 'none',
+              cursor: isLoading ? 'not-allowed' : 'pointer',
+              opacity: isLoading ? 0.7 : 1,
+            }}
           >
             {isLoading ? (
               <>
@@ -788,7 +977,7 @@ export function ProfileForm({ user, locale }: ProfileFormProps) {
               </>
             ) : (
               <>
-                <Check className="w-4 h-4" />
+                <Check style={{ width: 16, height: 16 }} />
                 Сохранить изменения
               </>
             )}

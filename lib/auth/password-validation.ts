@@ -2,8 +2,7 @@
  * Валидация сложного пароля
  * Требования:
  * - Минимум 8 символов
- * - Хотя бы одна строчная буква (a-z)
- * - Хотя бы одна заглавная буква (A-Z)
+ * - Хотя бы одна буква (a-z или A-Z)
  * - Хотя бы одна цифра (0-9)
  * - Хотя бы один специальный символ (!@#$%^&* и т.д.)
  */
@@ -13,8 +12,7 @@ export interface PasswordValidationResult {
   error?: string;
   requirements?: {
     minLength: boolean;
-    hasLowerCase: boolean;
-    hasUpperCase: boolean;
+    hasLetter: boolean;
     hasNumber: boolean;
     hasSpecialChar: boolean;
   };
@@ -23,8 +21,7 @@ export interface PasswordValidationResult {
 export function validateStrongPassword(password: string): PasswordValidationResult {
   const requirements = {
     minLength: password.length >= 8,
-    hasLowerCase: /[a-z]/.test(password),
-    hasUpperCase: /[A-Z]/.test(password),
+    hasLetter: /[a-zA-Z]/.test(password),
     hasNumber: /[0-9]/.test(password),
     hasSpecialChar: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password),
   };
@@ -32,23 +29,15 @@ export function validateStrongPassword(password: string): PasswordValidationResu
   if (!requirements.minLength) {
     return { 
       valid: false, 
-      error: 'Password must be at least 8 characters',
+      error: 'Пароль должен содержать минимум 8 символов',
       requirements 
     };
   }
   
-  if (!requirements.hasLowerCase) {
+  if (!requirements.hasLetter) {
     return { 
       valid: false, 
-      error: 'Password must contain at least one lowercase letter',
-      requirements 
-    };
-  }
-  
-  if (!requirements.hasUpperCase) {
-    return { 
-      valid: false, 
-      error: 'Password must contain at least one uppercase letter',
+      error: 'Пароль должен содержать хотя бы одну букву',
       requirements 
     };
   }
@@ -56,7 +45,7 @@ export function validateStrongPassword(password: string): PasswordValidationResu
   if (!requirements.hasNumber) {
     return { 
       valid: false, 
-      error: 'Password must contain at least one number',
+      error: 'Пароль должен содержать хотя бы одну цифру',
       requirements 
     };
   }
@@ -64,7 +53,7 @@ export function validateStrongPassword(password: string): PasswordValidationResu
   if (!requirements.hasSpecialChar) {
     return { 
       valid: false, 
-      error: 'Password must contain at least one special character',
+      error: 'Пароль должен содержать хотя бы один специальный символ',
       requirements 
     };
   }
@@ -75,8 +64,7 @@ export function validateStrongPassword(password: string): PasswordValidationResu
 export function getPasswordRequirements(password: string) {
   return {
     minLength: password.length >= 8,
-    hasLowerCase: /[a-z]/.test(password),
-    hasUpperCase: /[A-Z]/.test(password),
+    hasLetter: /[a-zA-Z]/.test(password),
     hasNumber: /[0-9]/.test(password),
     hasSpecialChar: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password),
   };

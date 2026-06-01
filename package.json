@@ -11,7 +11,13 @@
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate deploy",
     "db:migrate:dev": "prisma migrate dev",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "check:env": "node check-env.js",
+    "generate:jwt": "node generate-jwt-secret.js",
+    "docker:build": "docker build -t bite-lens .",
+    "docker:run": "docker run -p 3000:3000 --env-file .env bite-lens",
+    "docker:build:simple": "docker build -f Dockerfile.simple -t bite-lens .",
+    "deploy:check": "node check-env.js && npm run db:generate"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.2",

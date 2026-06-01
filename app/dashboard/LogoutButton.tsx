@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { LogOut } from 'lucide-react';
 
-export function LogoutButton() {
+export function LogoutButton({ className, children }: { className?: string; children?: React.ReactNode }) {
   const router = useRouter();
 
   const handleLogout = async () => {
@@ -15,10 +15,14 @@ export function LogoutButton() {
   return (
     <button
       onClick={handleLogout}
-      className="flex items-center gap-2 px-4 py-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-all hover:scale-105 font-medium"
+      className={className || "flex items-center gap-2 px-4 py-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-all hover:scale-105 font-medium"}
     >
-      <LogOut className="w-5 h-5" />
-      <span className="hidden sm:inline">Выйти</span>
+      {children || (
+        <>
+          <LogOut className="w-5 h-5" />
+          <span className="hidden sm:inline">Выйти</span>
+        </>
+      )}
     </button>
   );
 }

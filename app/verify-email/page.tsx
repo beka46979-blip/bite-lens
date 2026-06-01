@@ -1,75 +1,146 @@
 import { redirect } from 'next/navigation';
-import { getCurrentUser } from '@/lib/auth/session';
+import { getPendingUser } from '@/lib/auth/session';
 import { prisma } from '@/lib/prisma';
 import { VerifyEmailForm } from './VerifyEmailForm';
+import { ResendCodeButton } from './ResendCodeButton';
 import { ThemeToggle } from '@/app/components/ThemeToggle';
+import Link from 'next/link';
 
 export default async function VerifyEmailPage() {
-  const currentUser = await getCurrentUser();
+  console.log('📄 Загрузка страницы /verify-email');
+  
+  // Проверяем наличие временного токена для pending регистрации
+  const pendingUser = await getPendingUser();
+  
+  console.log('👤 pendingUser:', pendingUser);
 
-  if (!currentUser) {
-    redirect('/login');
+  if (!pendingUser) {
+    console.log('❌ Нет pendingUser, редирект на /register');
+    redirect('/register');
   }
 
-  const user = await prisma.users.findUnique({
-    where: { id: currentUser.userId },
-    select: {
-      email: true,
-      is_email_verified: true,
-    },
+  // Проверяем, что pending регистрация существует
+  const pendingReg = await prisma.pending_registrations.findUnique({
+    where: { email: pendingUser.email },
   });
+  
+  console.log('📝 pendingReg:', pendingReg ? 'найдена' : 'не найдена');
 
-  if (!user) {
-    redirect('/login');
+  if (!pendingReg) {
+    console.log('❌ Нет pending регистрации, редирект на /register');
+    redirect('/register');
   }
-
-  // Если email уже подтвержден, перенаправляем в профиль
-  if (user.is_email_verified) {
-    redirect('/profile');
-  }
+  
+  console.log('✅ Все проверки пройдены, показываем форму верификации');
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center p-4">
+    <div style={{
+      minHeight: "100vh",
+      background: "var(--lp-bg)",
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      justifyContent: "center",
+      padding: "24px",
+      position: "relative",
+      overflow: "hidden",
+      fontFamily: "var(--font-geist-sans), sans-serif",
+      color: "var(--lp-text)",
+    }}>
+      {/* Glow blobs */}
+      <div style={{
+        position: "absolute", top: "-15%", left: "50%", transform: "translateX(-50%)",
+        width: 700, height: 500, pointerEvents: "none", zIndex: 0,
+        background: "radial-gradient(ellipse, var(--lp-green-mid) 0%, transparent 65%)",
+      }} />
+      <div style={{
+        position: "absolute", bottom: "5%", right: "8%",
+        width: 350, height: 350, pointerEvents: "none", zIndex: 0,
+        background: "radial-gradient(ellipse, var(--lp-purple-soft) 0%, transparent 70%)",
+      }} />
+
       {/* Theme Toggle - Fixed Position */}
-      <div className="fixed top-4 right-4 z-50">
+      <div style={{
+        position: "fixed",
+        top: "16px",
+        right: "16px",
+        zIndex: 50,
+      }}>
         <ThemeToggle />
       </div>
 
-      <div className="w-full max-w-md">
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8">
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-full mb-4">
+      <div style={{ position: "relative", zIndex: 1, width: "100%", maxWidth: 420 }}>
+        {/* Logo */}
+        <Link href="/" style={{
+          display: "flex", alignItems: "center", justifyContent: "center",
+          marginBottom: 32, textDecoration: "none",
+        }}>
+          <span style={{
+            fontFamily: "var(--font-syne), sans-serif",
+            fontWeight: 900, fontSize: 24, color: "var(--lp-text)",
+          }}>
+            Bite Lens
+          </span>
+        </Link>
+
+        {/* Card */}
+        <div style={{
+          background: "var(--lp-card)",
+          border: "1px solid var(--lp-border)",
+          borderRadius: "var(--lp-radius)",
+          padding: "36px",
+          boxShadow: "var(--lp-shadow-md)",
+        }}>
+          {/* Header with Icon */}
+          <div style={{ textAlign: "center", marginBottom: 28 }}>
+            <div style={{
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: 64,
+              height: 64,
+              background: "var(--lp-green)",
+              borderRadius: "50%",
+              marginBottom: 16,
+            }}>
               <svg
-                className="w-8 h-8 text-white"
-                fill="none"
-                stroke="currentColor"
+                width="32"
+                height="32"
                 viewBox="0 0 24 24"
+                fill="none"
+                stroke="white"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-                />
+                <path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
               </svg>
             </div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+            <h1 style={{
+              fontFamily: "var(--font-syne), sans-serif",
+              fontSize: 26, fontWeight: 800, letterSpacing: -0.5,
+              color: "var(--lp-text)", margin: "0 0 8px",
+            }}>
               Подтвердите Email
             </h1>
-            <p className="text-gray-600 dark:text-gray-400">
+            <p style={{ fontSize: 14, color: "var(--lp-muted)", fontWeight: 300, margin: "0 0 4px" }}>
               Мы отправим код подтверждения на
             </p>
-            <p className="text-emerald-600 dark:text-emerald-400 font-semibold mt-1">
-              {user.email}
+            <p style={{ fontSize: 14, color: "var(--lp-green)", fontWeight: 600, margin: 0 }}>
+              {pendingUser.email}
             </p>
           </div>
 
-          <VerifyEmailForm email={user.email} />
+          <VerifyEmailForm email={pendingUser.email} />
         </div>
 
-        <p className="text-center text-sm text-gray-600 dark:text-gray-400 mt-6">
+        {/* Resend Code Button - Outside Card */}
+        <ResendCodeButton />
+
+        {/* Help Text */}
+        <p style={{ textAlign: "center", fontSize: 13, color: "var(--lp-muted)", marginTop: 12, marginBottom: 0 }}>
           Не получили код?{' '}
-          <span className="text-emerald-600 dark:text-emerald-400">
+          <span style={{ color: "var(--lp-green)", fontWeight: 600 }}>
             Проверьте папку "Спам"
           </span>
         </p>
