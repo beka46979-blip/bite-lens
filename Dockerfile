@@ -5,6 +5,9 @@ WORKDIR /app
 # Устанавливаем необходимые системные зависимости для Prisma
 RUN apk add --no-cache libc6-compat openssl
 
+# Обновляем npm до последней версии
+RUN npm install -g npm@11.16.0
+
 # Копируем файлы зависимостей
 COPY package*.json ./
 COPY prisma ./prisma/

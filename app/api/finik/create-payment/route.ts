@@ -25,6 +25,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    if (!user.userId) {
+      return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
+    }
+
     // 2. Получение данных из запроса
     const body = await request.json();
     const { planType } = body;
